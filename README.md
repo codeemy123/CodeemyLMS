@@ -51,6 +51,8 @@ With the app running, use `npm run test:browser` to check primary role screens, 
 
 Use `npm run format` to format source code and documentation.
 
+For container builds and Cloud Run, use the root [Dockerfile](Dockerfile). See [Docker setup](docs/DOCKER.md) for build/run commands, ports and runtime configuration.
+
 ## Current scope
 
 Frontend demo plus local-only Cloudflare R2 storage API integration. No database, real authentication, payment, meeting-provider integration, or real-time chat service has been implemented. The database document is a proposal for the later backend stage. See [R2 storage](docs/R2_STORAGE.md) for connected uploads and the local-preview security boundary.
