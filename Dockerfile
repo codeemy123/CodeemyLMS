@@ -9,6 +9,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 FROM base AS builder
+ENV DOCKER_BUILD=1
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY package.json package-lock.json next.config.mjs jsconfig.json ./
 COPY public ./public

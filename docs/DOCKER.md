@@ -2,6 +2,8 @@
 
 The root `Dockerfile` builds a standalone Next.js server using Node 24 and a separate non-root runtime stage. The runtime includes traced server dependencies, static assets and the public folder. It starts `node server.js` rather than the loopback-only local npm start script.
 
+The builder sets `DOCKER_BUILD=1` to enable standalone output. Ordinary local `npm run build` and `npm start` continue using the standard Next.js server.
+
 Build from the project root with Docker Desktop or a Linux Docker builder:
 
 ```sh
