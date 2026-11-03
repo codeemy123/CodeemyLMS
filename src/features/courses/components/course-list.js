@@ -19,7 +19,7 @@ export default function CourseList() {
           </button>
         ))}
       </div>
-      {role !== 'Student' && (
+      {role === 'Admin' && (
         <div className="toolbar">
           <Button onClick={() => setModal('Create course')}>
             <Plus size={15} />

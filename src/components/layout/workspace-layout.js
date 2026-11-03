@@ -330,6 +330,10 @@ export default function WorkspaceLayout({ children }) {
   const open = (row) => go(page, { title: row[0], row });
   function save(e) {
     e.preventDefault();
+    if (modal === 'Create course' && role !== 'Admin') {
+      notify('Only an administrator can create courses');
+      return;
+    }
     if (page === 'Classes' && !modal.startsWith('Edit') && role !== 'Admin') {
       notify('Only an administrator can create classes');
       return;
