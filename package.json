@@ -1,0 +1,29 @@
+{
+  "name": "codeemy-lms",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "test": "node --test tests/*.test.mjs",
+    "db:validate": "prisma validate",
+    "test:browser": "playwright test",
+    "format": "prettier --write src tests docs README.md package.json jsconfig.json .prettierrc.json",
+    "format:check": "prettier --check src tests docs README.md package.json jsconfig.json .prettierrc.json"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^18.0.9",
+    "lucide-react": "^0.468.0",
+    "next": "^16.3.8",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "prettier": "^3.9.9",
+    "prisma": "^7.10.1"
+  }
+}
