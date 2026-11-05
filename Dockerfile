@@ -14,7 +14,9 @@ COPY --from=dependencies /app/node_modules ./node_modules
 COPY package.json package-lock.json next.config.mjs jsconfig.json ./
 COPY public ./public
 COPY src ./src
-RUN npm run build
+COPY prisma ./prisma
+COPY prisma7.config.js ./
+RUN npx prisma generate && npm run build
 
 FROM base AS runner
 ENV NODE_ENV=production \

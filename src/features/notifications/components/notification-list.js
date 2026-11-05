@@ -4,16 +4,17 @@ import { Badge, Button } from '@/components/ui';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
 
 export default function NotificationList() {
-  const { read, setRead, notify, go, notifications, unreadCount, readIds } = useWorkspace();
+  const { read, setRead, notify, go, notifications, unreadCount, readIds, notificationError } =
+    useWorkspace();
   return (
     <div className="card">
+      {notificationError && <p role="alert">{notificationError}</p>}
       <div className="section-head">
         <h2>{read ? 'All caught up' : `${unreadCount} new notifications`}</h2>
         <Button
           secondary
           onClick={() => {
             setRead();
-            notify('All notifications marked read');
           }}
         >
           Mark all as read

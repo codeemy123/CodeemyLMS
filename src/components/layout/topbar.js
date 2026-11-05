@@ -3,9 +3,8 @@ import { Bell, Menu, X, Search, ChevronDown } from 'lucide-react';
 import { navigation } from '@/config/navigation';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
 export default function Topbar() {
-  const { role, mobile, setMobile, read, notify, go, records } = useWorkspace();
-  const name =
-    role === 'Student' ? 'Kavin Raj' : role === 'Mentor' ? 'Arjun Kumar' : 'Academy Admin';
+  const { role, mobile, setMobile, read, notify, go, records, actor } = useWorkspace();
+  const name = actor?.full_name || 'Account';
   return (
     <header className="topbar">
       <button
@@ -50,22 +49,22 @@ export default function Topbar() {
         </button>
         <button className="user profile-button" onClick={() => go('Profile')}>
           <div className="avatar">
-            {records[name]?.photo ? (
+            {actor?.profile_image ? (
               <img
                 className="profile-avatar-image"
-                src={records[name].photo.data}
+                src={actor?.profile_image}
                 alt="Your profile picture"
               />
-            ) : role === 'Student' ? (
-              'KR'
-            ) : role === 'Mentor' ? (
-              'AK'
             ) : (
-              'AD'
+              name
+                .split(' ')
+                .map((part) => part[0])
+                .slice(0, 2)
+                .join('')
             )}
           </div>
           <div>
-            {role === 'Student' ? 'Kavin Raj' : role === 'Mentor' ? 'Arjun Kumar' : 'Academy Admin'}
+            {actor?.full_name || name}
             <small>{role}</small>
           </div>
           <ChevronDown size={13} className="profile-chevron" />

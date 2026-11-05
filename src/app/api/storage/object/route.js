@@ -1,14 +1,14 @@
-import { localStorageRequestAllowed } from '@/lib/storage-policy';
+import { authorizeObject } from '@/lib/server/storage-access';
+import { errorResponse } from '@/lib/server/api';
 import { validObjectSignature, r2Request } from '@/lib/server/r2';
 export const runtime = 'nodejs';
 export async function GET(request) {
-  if (!localStorageRequestAllowed(request, process.env.R2_LOCAL_PREVIEW_ENABLED === 'true'))
-    return new Response('Local storage preview only.', { status: 403 });
   try {
     const url = new URL(request.url),
       key = url.searchParams.get('key');
     if (!validObjectSignature(key, url.searchParams.get('signature')))
       return new Response('Invalid file access link.', { status: 403 });
+    await authorizeObject(request, key, request.method === 'DELETE');
     const range = request.headers.get('range');
     if (range && !/^bytes=\d*-\d*$/.test(range))
       return new Response('Invalid range.', { status: 416 });
@@ -32,13 +32,12 @@ export async function GET(request) {
       `${url.searchParams.get('download') === '1' || !preview ? 'attachment' : 'inline'}; filename="${key.split('/').at(-1)}"`,
     );
     return new Response(response.body, { status: response.status, headers });
-  } catch {
+  } catch (error) {
+    if (error.status) return errorResponse(error);
     return new Response('Storage temporarily unavailable.', { status: 503 });
   }
 }
 export async function DELETE(request) {
-  if (!localStorageRequestAllowed(request, process.env.R2_LOCAL_PREVIEW_ENABLED === 'true'))
-    return new Response('Local storage preview only.', { status: 403 });
   try {
     const url = new URL(request.url),
       key = url.searchParams.get('key');
@@ -48,7 +47,8 @@ export async function DELETE(request) {
     return response.ok
       ? new Response(null, { status: 204 })
       : new Response('Could not delete file.', { status: 502 });
-  } catch {
+  } catch (error) {
+    if (error.status) return errorResponse(error);
     return new Response('Storage temporarily unavailable.', { status: 503 });
   }
 }

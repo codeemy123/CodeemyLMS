@@ -1,5 +1,6 @@
 'use client';
 
+import DatabaseProfile from './database-profile';
 import { useState } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { Button, Badge } from '@/components/ui';
@@ -7,6 +8,10 @@ import { useWorkspace } from '@/features/workspace/context/workspace-context';
 import { uploadFile, deleteStoredFile } from '@/lib/uploads';
 
 export default function ProfileSettings() {
+  return <DatabaseProfile />;
+}
+
+function PreviewProfileSettings() {
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const [photoName, setPhotoName] = useState('');

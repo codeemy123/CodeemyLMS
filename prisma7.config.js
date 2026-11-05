@@ -3,7 +3,7 @@ import { defineConfig } from 'prisma/config';
 
 // Match local Next.js configuration without exposing secrets to the browser.
 config({ path: ['.env.local', '.env'], quiet: true });
-const databaseUrl = process.env.DATABASE_URL?.trim();
+const databaseUrl = (process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL)?.trim();
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',

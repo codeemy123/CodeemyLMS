@@ -1,4 +1,12 @@
 'use client';
+import DatabaseAssignments from '@/features/database/assignments';
+import DatabaseDashboard from '@/features/database/dashboard';
+import DatabasePeople from '@/features/database/people';
+import DatabaseBatches from '@/features/database/batches';
+import DatabaseCourses from '@/features/database/courses';
+import DatabaseAttendance from '@/features/database/attendance';
+import DatabaseClasses from '@/features/database/classes';
+import { logout } from '@/features/auth/client';
 import Topbar from '@/components/layout/topbar';
 import Sidebar from '@/components/layout/sidebar';
 import { useEffect, useState, useRef } from 'react';
@@ -20,6 +28,28 @@ import { renameWorkflow } from '@/lib/workspace-renames';
 import useAssessmentAttempt from '@/features/assessments/use-assessment-attempt';
 
 export default function WorkspaceLayout({ children }) {
+  const [actor, setActor] = useState(null);
+  const [today, setToday] = useState('');
+  useEffect(() => {
+    setToday(
+      new Intl.DateTimeFormat('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'Asia/Kolkata',
+      }).format(new Date()),
+    );
+  }, []);
+  useEffect(() => {
+    const refresh = () =>
+      fetch('/api/auth/me', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => setActor(data?.user || null))
+        .catch(() => {});
+    refresh();
+    window.addEventListener('codeemy-profile-updated', refresh);
+    return () => window.removeEventListener('codeemy-profile-updated', refresh);
+  }, []);
   const router = useRouter();
   const pathname = usePathname();
   const [courses, setCourses] = useState(() => structuredClone(initialCourses));
@@ -74,23 +104,44 @@ export default function WorkspaceLayout({ children }) {
     setModal,
     notify: setToast,
   });
-  const notifications = workspaceNotifications(role, workflows, baseRows);
-  const notificationKey = `notifications:${role}:${role === 'Student' ? 'Kavin Raj' : role === 'Mentor' ? 'Arjun Kumar' : 'Academy Admin'}`;
-  const readIds = records[notificationKey]?.ids || [];
-  const unreadCount = notifications.filter((item) => !readIds.includes(item.id)).length;
+  const [notifications, setNotifications] = useState([]);
+  const [notificationError, setNotificationError] = useState('');
+  async function loadNotifications() {
+    try {
+      const response = await fetch('/api/notifications', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setNotifications(
+        data.notifications.map((n) => ({ ...n, description: n.message, page: 'Notifications' })),
+      );
+      setNotificationError('');
+    } catch (error) {
+      setNotificationError(error.message);
+    }
+  }
+  useEffect(() => {
+    loadNotifications();
+    const timer = setInterval(loadNotifications, 30000);
+    return () => clearInterval(timer);
+  }, []);
+  const readIds = notifications.filter((n) => n.is_read).map((n) => n.id);
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
   const read = unreadCount === 0;
-  function setRead(id) {
-    setRecords((r) => ({
-      ...r,
-      [notificationKey]: {
-        ids: [
-          ...new Set([
-            ...(r[notificationKey]?.ids || []),
-            ...(id ? [id] : notifications.map((item) => item.id)),
-          ]),
-        ],
-      },
-    }));
+  async function setRead(id) {
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(id ? { ids: [id] } : { all: true }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error);
+      }
+      await loadNotifications();
+    } catch (error) {
+      setToast(error.message);
+    }
   }
   const completionKey = `lessons:${detail?.title || 'none'}`;
   const completed = records[completionKey]?.completed || [];
@@ -214,12 +265,18 @@ export default function WorkspaceLayout({ children }) {
     setResult(false);
     router.push(workspaceHref(role, p, d));
   }
-  function signOut() {
+  async function signOut() {
+    try {
+      await logout();
+    } catch {
+      setToast('Unable to sign out. Please try again.');
+      return;
+    }
     setMobile(false);
     setModal(null);
     setAttempt(false);
     setResult(false);
-    router.replace(workspaceHref(role, 'Login'));
+    window.location.assign('/login');
   }
   function changeRole(r) {
     router.push(workspaceHref(r, 'Dashboard'));
@@ -594,11 +651,11 @@ export default function WorkspaceLayout({ children }) {
 
   const titles = {
     Dashboard:
-      role === 'Student'
-        ? 'Welcome back, Kavin 👋'
-        : role === 'Mentor'
-          ? 'Welcome back, Arjun 👋'
-          : 'Welcome back, Admin 👋',
+      role === 'Admin'
+        ? 'Academy overview'
+        : actor
+          ? 'Welcome back, ' + actor.full_name
+          : 'Your workspace',
     'My Courses': 'My courses',
     Mentor: 'Your mentor',
     Progress: 'Your learning progress',
@@ -616,6 +673,8 @@ export default function WorkspaceLayout({ children }) {
   const stats = (items) => <StatGrid items={items} />;
   const formFields = (fields, values) => <FormFields fields={fields} values={values} />;
   const context = {
+    actor,
+    notificationError,
     startAssessment,
     finishAssessment,
     assessmentOutcome,
@@ -711,6 +770,23 @@ export default function WorkspaceLayout({ children }) {
             </button>
             {detail && ' / ' + detail.title}
           </div>
+          {![
+            'Dashboard',
+            'Courses',
+            'My Courses',
+            'Classes',
+            'Attendance',
+            'Students',
+            'Mentors',
+            'Batches',
+            'Profile',
+            'Notifications',
+            'Assignments',
+          ].includes(page) && (
+            <p role="status">
+              This workflow is still a preview. Changes here are not saved to the academy database.
+            </p>
+          )}
           <div className="page-title">
             <div>
               <h1>{detail?.title || titles[page] || page}</h1>
@@ -721,9 +797,9 @@ export default function WorkspaceLayout({ children }) {
                     'Manage your ' + page.toLowerCase() + ' in your CodeEmy workspace.'}
               </p>
             </div>
-            {page === 'Dashboard' && (
+            {page === 'Dashboard' && today && (
               <Button secondary onClick={() => go('Classes')}>
-                <CalendarDays size={14} /> Sep 30, 2026
+                <CalendarDays size={14} /> {today}
               </Button>
             )}
           </div>
@@ -744,23 +820,25 @@ export default function WorkspaceLayout({ children }) {
             </div>
           ) : !demoLoaded ? (
             <div className="card skeleton" aria-label="Loading saved workspace" />
+          ) : page === 'Assignments' ? (
+            <DatabaseAssignments />
+          ) : page === 'Dashboard' ? (
+            <DatabaseDashboard />
+          ) : ['Students', 'Mentors'].includes(page) ? (
+            <DatabasePeople />
+          ) : page === 'Batches' ? (
+            <DatabaseBatches />
+          ) : ['My Courses', 'Courses'].includes(page) ? (
+            <DatabaseCourses />
+          ) : page === 'Attendance' ? (
+            <DatabaseAttendance />
+          ) : page === 'Classes' ? (
+            <DatabaseClasses />
           ) : (
             children
           )}
           <footer className="footer">
             <span>© 2026 CodeEmy Edutech. Keep learning, keep growing.</span>
-            <label>
-              Preview state{' '}
-              <select
-                aria-label="Preview UI states"
-                value={viewState}
-                onChange={(e) => setViewState(e.target.value)}
-              >
-                {['Ready', 'Loading', 'Empty', 'Error'].map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
           </footer>
         </div>
       </main>

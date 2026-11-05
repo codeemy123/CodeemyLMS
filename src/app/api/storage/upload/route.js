@@ -1,17 +1,13 @@
+import { uploadActor } from '@/lib/server/storage-access';
+import { getPrisma } from '@/lib/prisma';
+import { errorResponse } from '@/lib/server/api';
 import { randomUUID } from 'node:crypto';
-import { uploadPolicy, localStorageRequestAllowed, VIDEO_LIMIT } from '@/lib/storage-policy';
+import { uploadPolicy, VIDEO_LIMIT } from '@/lib/storage-policy';
 import { objectUrl, r2Request } from '@/lib/server/r2';
 export const runtime = 'nodejs';
 export async function POST(request) {
-  if (!localStorageRequestAllowed(request, process.env.R2_LOCAL_PREVIEW_ENABLED === 'true'))
-    return Response.json(
-      {
-        error:
-          'Storage preview is available only on localhost. Production authentication is required.',
-      },
-      { status: 403 },
-    );
   try {
+    const { actor, courseId } = await uploadActor(request);
     let name;
     try {
       name = decodeURIComponent(request.headers.get('x-file-name') || '');
@@ -48,6 +44,19 @@ export async function POST(request) {
         { error: 'Cloudflare upload failed. Check the server R2 configuration and retry.' },
         { status: 502 },
       );
+    try {
+      await getPrisma().audit_logs.create({
+        data: {
+          user_id: actor.id,
+          action: 'FILE_UPLOADED',
+          entity_type: 'storage',
+          details: { key, courseId, name, type: policy.type, size: length },
+        },
+      });
+    } catch (error) {
+      await r2Request('DELETE', key).catch(() => {});
+      throw error;
+    }
     const data = objectUrl(key);
     return Response.json(
       {
@@ -62,6 +71,7 @@ export async function POST(request) {
       { status: 201, headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
+    if (error.status) return errorResponse(error);
     const message = String(error.message || '');
     const validation = message.startsWith('Use ') || message.startsWith('Choose ');
     return Response.json(

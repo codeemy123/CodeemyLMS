@@ -47,16 +47,7 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="sidebar-bottom">
-        <select
-          className="role"
-          aria-label="Switch preview role"
-          value={role}
-          onChange={(e) => changeRole(e.target.value)}
-        >
-          {Object.keys(navigation).map((r) => (
-            <option key={r}>{r}</option>
-          ))}
-        </select>
+        <span className="workspace">{role} account</span>
         <button className="text-link" style={{ marginTop: 12 }} onClick={signOut}>
           <LogOut size={13} /> Sign out
         </button>
