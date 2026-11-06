@@ -69,6 +69,7 @@ export const navigation = {
     ['Dashboard', LayoutDashboard],
     ['Students', Users],
     ['Mentors', GraduationCap],
+    ['Account Approvals', ShieldCheck],
     ['Courses', BookOpen],
     ['Batches', Layers],
     ['Content', FileText],

@@ -5,7 +5,8 @@ import { navigation } from '@/config/navigation';
 import { workspaceHref } from '@/lib/routes';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
 export default function Sidebar() {
-  const { role, page, mobile, unreadCount, go, changeRole, signOut } = useWorkspace();
+  const { role, page, mobile, unreadCount, approvalCount, go, changeRole, signOut } =
+    useWorkspace();
   return (
     <aside className={'sidebar ' + (mobile ? 'open' : '')}>
       <a
@@ -33,6 +34,7 @@ export default function Sidebar() {
             key={n}
             href={workspaceHref(role, n)}
             className={page === n ? 'active' : ''}
+            aria-current={page === n ? 'page' : undefined}
             onClick={(e) => {
               e.preventDefault();
               go(n);
@@ -40,6 +42,9 @@ export default function Sidebar() {
           >
             <Icon size={17} />
             {n}
+            {n === 'Account Approvals' && approvalCount > 0 && (
+              <span className="nav-count">{approvalCount}</span>
+            )}
             {n === 'Notifications' && unreadCount > 0 && (
               <span className="nav-count">{unreadCount}</span>
             )}

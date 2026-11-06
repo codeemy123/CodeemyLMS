@@ -34,6 +34,7 @@ export const roleRoutes = {
     login: 'Login',
   },
   admin: {
+    approvals: 'Account Approvals',
     dashboard: 'Dashboard',
     classes: 'Classes',
     attendance: 'Attendance',

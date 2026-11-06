@@ -106,13 +106,38 @@ export default function WorkspaceLayout({ children }) {
   });
   const [notifications, setNotifications] = useState([]);
   const [notificationError, setNotificationError] = useState('');
+  const [approvalCount, setApprovalCount] = useState(0);
+  useEffect(() => {
+    if (role !== 'Admin') return;
+    let active = true;
+    const refresh = () =>
+      fetch('/api/admin/approvals', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (active && data) setApprovalCount(data.pendingCount);
+        })
+        .catch(() => {});
+    refresh();
+    const timer = setInterval(refresh, 30000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [role]);
   async function loadNotifications() {
     try {
       const response = await fetch('/api/notifications', { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setNotifications(
-        data.notifications.map((n) => ({ ...n, description: n.message, page: 'Notifications' })),
+        data.notifications.map((n) => ({
+          ...n,
+          description: n.message,
+          page:
+            role === 'Admin' && n.type === 'ACCOUNT_APPROVAL'
+              ? 'Account Approvals'
+              : 'Notifications',
+        })),
       );
       setNotificationError('');
     } catch (error) {
@@ -675,6 +700,7 @@ export default function WorkspaceLayout({ children }) {
   const context = {
     actor,
     notificationError,
+    approvalCount,
     startAssessment,
     finishAssessment,
     assessmentOutcome,
@@ -782,6 +808,7 @@ export default function WorkspaceLayout({ children }) {
             'Profile',
             'Notifications',
             'Assignments',
+            'Account Approvals',
           ].includes(page) && (
             <p role="status">
               This workflow is still a preview. Changes here are not saved to the academy database.

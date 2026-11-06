@@ -2,6 +2,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import {
   getAuth,
+  createUserWithEmailAndPassword,
   setPersistence,
   inMemoryPersistence,
   signInWithEmailAndPassword,
@@ -60,6 +61,7 @@ export async function resetPassword(email) {
 }
 export function authMessage(error) {
   const messages = {
+    'auth/weak-password': 'Use a stronger password with at least 12 characters.',
     'auth/invalid-credential': 'Email or password is incorrect.',
     'auth/popup-closed-by-user': 'Google sign-in was cancelled.',
     'auth/popup-blocked': 'Allow popups for this site, then try again.',
@@ -70,4 +72,41 @@ export function authMessage(error) {
     'auth/network-request-failed': 'Check your internet connection and try again.',
   };
   return messages[error.code] || (error.code ? 'Sign-in failed. Please try again.' : error.message);
+}
+
+export async function registerAccount(details, google = false) {
+  const auth = await clientAuth();
+  try {
+    let credential;
+    if (google) {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      credential = await signInWithPopup(auth, provider);
+    } else {
+      try {
+        credential = await createUserWithEmailAndPassword(auth, details.email, details.password);
+      } catch (error) {
+        if (error.code !== 'auth/email-already-in-use') throw error;
+        credential = await signInWithEmailAndPassword(auth, details.email, details.password);
+      }
+    }
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idToken: await credential.user.getIdToken(),
+        fullName: details.fullName,
+        role: details.role,
+        phone: details.phone,
+        college: details.college,
+        qualification: details.qualification,
+        message: details.message,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Registration could not be submitted.');
+    return result;
+  } finally {
+    await signOut(auth);
+  }
 }

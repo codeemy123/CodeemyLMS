@@ -1,3 +1,4 @@
+import { registrationLoginMessage } from '@/lib/server/registrations';
 import { NextResponse } from 'next/server';
 import { firebaseAuth } from '@/lib/server/firebase';
 import { sessionCookie } from '@/lib/server/auth';
@@ -24,8 +25,13 @@ export async function POST(request) {
       where: { firebase_uid: token.uid },
       select: { id: true, role: true, status: true },
     });
-    if (!actor || actor.status !== 'ACTIVE')
-      throw new ApiError(403, 'Ask your administrator to provision or activate your account.');
+    if (!actor)
+      throw new ApiError(
+        403,
+        'Register your account first so your academy can review your access.',
+      );
+    if (actor.status !== 'ACTIVE')
+      throw new ApiError(403, await registrationLoginMessage(db, actor.id));
     const value = await auth.createSessionCookie(body.idToken, {
       expiresIn: 5 * 24 * 60 * 60 * 1000,
     });
