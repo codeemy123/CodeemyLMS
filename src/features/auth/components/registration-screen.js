@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ShieldCheck, Clock3, CheckCircle2, GraduationCap, Users } from 'lucide-react';
 import {
   registerAccount,
@@ -9,13 +9,26 @@ import {
 } from '@/features/auth/client';
 export default function RegistrationScreen({ initialGoogleProfile = null, onCancel } = {}) {
   const [googleProfile, setGoogleProfile] = useState(initialGoogleProfile);
+  const [choosingRole, setChoosingRole] = useState(Boolean(initialGoogleProfile));
+  const roleDialog = useRef(null);
+  const detailsForm = useRef(null);
+  useEffect(() => {
+    if (choosingRole && googleProfile) roleDialog.current?.showModal();
+    else {
+      roleDialog.current?.close();
+      if (googleProfile) detailsForm.current?.querySelector('input')?.focus();
+    }
+  }, [choosingRole, googleProfile]);
   async function chooseGoogle() {
     setBusy(true);
     setMessage('');
     try {
       const result = await googleAccess();
       if (typeof result === 'string') window.location.assign(result);
-      else setGoogleProfile(result.profile);
+      else {
+        setGoogleProfile(result.profile);
+        setChoosingRole(true);
+      }
     } catch (error) {
       setMessage(authMessage(error));
     } finally {
@@ -27,6 +40,7 @@ export default function RegistrationScreen({ initialGoogleProfile = null, onCanc
     try {
       await cancelGoogleRegistration();
       setGoogleProfile(null);
+      setChoosingRole(false);
       setMessage('');
       if (onCancel) onCancel();
     } catch (error) {
@@ -61,6 +75,66 @@ export default function RegistrationScreen({ initialGoogleProfile = null, onCanc
   }
   return (
     <section className="registration-shell">
+      <dialog
+        ref={roleDialog}
+        className="registration-role-dialog"
+        aria-labelledby="role-dialog-title"
+        aria-describedby="role-dialog-description"
+        onCancel={(event) => event.preventDefault()}
+      >
+        <span className="academy-overline">LET’S GET YOU STARTED</span>
+        <h2 id="role-dialog-title">How will you use CodeEmy?</h2>
+        <p id="role-dialog-description">
+          Choose your workspace. Next, we’ll ask for a few details for your academy to review.
+        </p>
+        <div className="registration-google-identity">
+          <span aria-hidden="true">{googleProfile?.fullName?.slice(0, 1) || 'G'}</span>
+          <div>
+            <strong>{googleProfile?.fullName || 'Your Google account'}</strong>
+            <small>{googleProfile?.email}</small>
+          </div>
+        </div>
+        <div className="registration-role-options">
+          {[
+            [
+              'STUDENT',
+              'I’m a student',
+              'Explore courses, attend classes and build your skills.',
+              GraduationCap,
+            ],
+            ['MENTOR', 'I’m a mentor', 'Teach your batches and support your learners.', Users],
+          ].map(([value, label, description, Icon]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => {
+                setRole(value);
+                setChoosingRole(false);
+              }}
+            >
+              <span className="registration-option-icon">
+                <Icon size={24} />
+              </span>
+              <span>
+                <strong>{label}</strong>
+                <small>{description}</small>
+              </span>
+              <ArrowRight size={19} />
+            </button>
+          ))}
+        </div>
+        <p className="registration-dialog-note">
+          <ShieldCheck size={16} /> Both workspaces require Admin approval.
+        </p>
+        <button
+          className="registration-switch-account"
+          type="button"
+          disabled={busy}
+          onClick={changeMethod}
+        >
+          Use a different account
+        </button>
+      </dialog>
       <a className="registration-brand" href="/login">
         <img src="/codeemy-technologies.png" alt="CodeEmy" width="170" />
       </a>
@@ -92,14 +166,20 @@ export default function RegistrationScreen({ initialGoogleProfile = null, onCanc
           <>
             <div className="registration-access-method">
               {googleProfile ? (
-                <>
-                  <p>
-                    Registering with Google: <strong>{googleProfile.email}</strong>
-                  </p>
-                  <button type="button" disabled={busy} onClick={changeMethod}>
+                <div className="registration-google-summary">
+                  <div>
+                    <span>Connected with Google</span>
+                    <strong>{googleProfile.email}</strong>
+                  </div>
+                  <button
+                    className="registration-switch-account"
+                    type="button"
+                    disabled={busy}
+                    onClick={changeMethod}
+                  >
                     Use a different account
                   </button>
-                </>
+                </div>
               ) : (
                 <>
                   <button
@@ -116,33 +196,47 @@ export default function RegistrationScreen({ initialGoogleProfile = null, onCanc
                 </>
               )}
             </div>
-            <div className="registration-role-picker" aria-label="Choose your role">
-              {[
-                ['STUDENT', 'Student', GraduationCap],
-                ['MENTOR', 'Mentor', Users],
-              ].map(([value, label, Icon]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={role === value}
-                  onClick={() => setRole(value)}
-                  className={role === value ? 'selected' : ''}
-                >
-                  <Icon size={20} />
-                  <span>
-                    {label}
-                    <small>
-                      {value === 'STUDENT'
-                        ? 'Learn and build new skills'
-                        : 'Guide and support learners'}
-                    </small>
-                  </span>
-                  {role === value && <CheckCircle2 size={17} />}
+            {googleProfile ? (
+              <div className="registration-selected-role">
+                <span>
+                  <strong>{role === 'STUDENT' ? 'Student' : 'Mentor'} registration</strong>
+                  <small>Step 2 of 2 · Complete your details</small>
+                </span>
+                <button type="button" onClick={() => setChoosingRole(true)}>
+                  Change role
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="registration-role-picker" aria-label="Choose your role">
+                {[
+                  ['STUDENT', 'Student', GraduationCap],
+                  ['MENTOR', 'Mentor', Users],
+                ].map(([value, label, Icon]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={role === value}
+                    onClick={() => setRole(value)}
+                    className={role === value ? 'selected' : ''}
+                  >
+                    <Icon size={20} />
+                    <span>
+                      {label}
+                      <small>
+                        {value === 'STUDENT'
+                          ? 'Learn and build new skills'
+                          : 'Guide and support learners'}
+                      </small>
+                    </span>
+                    {role === value && <CheckCircle2 size={17} />}
+                  </button>
+                ))}
+              </div>
+            )}
             <form
+              ref={detailsForm}
               key={googleProfile?.email || 'email'}
+              hidden={Boolean(googleProfile && choosingRole)}
               className="auth-form registration-form"
               onSubmit={(event) => submit(event, Boolean(googleProfile))}
             >
@@ -183,7 +277,7 @@ export default function RegistrationScreen({ initialGoogleProfile = null, onCanc
                   />
                 </label>
                 {role === 'STUDENT' ? (
-                  <label>
+                  <label key="student-college">
                     College / institution
                     <input
                       name="college"
@@ -192,7 +286,7 @@ export default function RegistrationScreen({ initialGoogleProfile = null, onCanc
                     />
                   </label>
                 ) : (
-                  <label>
+                  <label key="mentor-qualification">
                     Qualification / expertise
                     <input
                       name="qualification"

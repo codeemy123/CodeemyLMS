@@ -2019,6 +2019,193 @@ select:focus-visible {
     radial-gradient(ellipse at 10% 0, #ffe4c8, transparent 50%),
     radial-gradient(ellipse at 100% 90%, #f8dfed, transparent 50%), #fcf9f6;
 }
+.registration-role-dialog {
+  width: min(540px, calc(100% - 32px));
+  max-height: calc(100dvh - 40px);
+  margin: auto;
+  padding: clamp(22px, 5vw, 36px);
+  border: 1px solid #f0ded1;
+  border-radius: 24px;
+  background: linear-gradient(155deg, #fffaf5, #fff 65%);
+  color: #493128;
+  box-shadow: 0 24px 90px #31152540;
+}
+.registration-role-dialog::backdrop {
+  background: #251b27a6;
+  backdrop-filter: blur(7px);
+}
+.registration-role-dialog h2 {
+  font-size: clamp(24px, 5vw, 30px);
+  line-height: 1.2;
+  margin: 14px 0 12px;
+  letter-spacing: -0.7px;
+}
+.registration-role-dialog > p {
+  color: #8e7669;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.registration-google-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  margin: 8px 0;
+}
+.registration-google-identity > span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #fce7d5;
+  color: #b14c2c;
+  font-weight: 700;
+}
+.registration-google-identity div {
+  min-width: 0;
+}
+.registration-google-identity strong,
+.registration-google-identity small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.registration-google-identity small {
+  color: #947b6e;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.registration-role-options {
+  display: grid;
+  gap: 12px;
+}
+.registration-role-options button {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 20px 16px;
+  background: #fff;
+  border: 1px solid #eaddd3;
+  border-radius: 16px;
+  color: #50362b;
+  cursor: pointer;
+}
+.registration-role-options button:hover {
+  background: #fff2e8;
+  border-color: #d8754e;
+}
+.registration-role-options button:focus-visible,
+.registration-switch-account:focus-visible,
+.registration-selected-role button:focus-visible {
+  outline: 3px solid #d8754e;
+  outline-offset: 3px;
+}
+.registration-option-icon {
+  color: #bd542e;
+  background: #fff0e3;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+}
+.registration-role-options button > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.registration-role-options strong {
+  display: block;
+  font-size: 16px;
+}
+.registration-role-options small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #957d70;
+}
+.registration-dialog-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+.registration-dialog-note svg {
+  flex-shrink: 0;
+}
+.registration-switch-account {
+  border: 0;
+  background: transparent;
+  color: #b14e2d;
+  padding: 10px 0;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.registration-role-dialog > .registration-switch-account {
+  display: block;
+  margin: auto;
+}
+.registration-google-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: #fff8f1;
+  border: 1px solid #f0e0d2;
+  padding: 14px 18px;
+  border-radius: 14px;
+  margin: 20px 0;
+}
+.registration-google-summary div {
+  min-width: 0;
+}
+.registration-google-summary span,
+.registration-google-summary strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.registration-google-summary span {
+  font-size: 12px;
+  color: #9b8171;
+  margin-bottom: 5px;
+}
+.registration-google-summary strong {
+  font-size: 14px;
+  color: #573b2f;
+}
+.registration-selected-role {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0;
+}
+.registration-selected-role strong,
+.registration-selected-role small {
+  display: block;
+}
+.registration-selected-role small {
+  font-size: 12px;
+  color: #9b8171;
+  margin-top: 5px;
+}
+.registration-selected-role button {
+  background: #fff;
+  border: 1px solid #efdfd2;
+  border-radius: 9px;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: #b14e2d;
+  cursor: pointer;
+}
+.registration-form[hidden] {
+  display: none;
+}
 .registration-brand {
   display: block;
   width: 185px;
