@@ -46,6 +46,10 @@ export default function DatabaseDashboard() {
     load();
   }, [role]);
   const admin = role === 'Admin';
+  const student =
+    String(role || actor?.role || '')
+      .trim()
+      .toUpperCase() === 'STUDENT';
   const metrics = admin
     ? [
         [
@@ -113,11 +117,15 @@ export default function DatabaseDashboard() {
     .slice(0, 3);
   return (
     <div className="academy-dashboard">
-      <section className="academy-hero">
+      <section className={'academy-hero' + (student ? ' student-quote-banner' : '')}>
         <div className="academy-hero-copy">
           <span className="academy-kicker">
             <span className="academy-live-dot" />
-            {admin ? 'YOUR ACADEMY, CONNECTED' : 'YOUR NEXT CHAPTER'}
+            {admin
+              ? 'YOUR ACADEMY, CONNECTED'
+              : student
+                ? 'A LITTLE INSPIRATION FOR TODAY'
+                : 'YOUR NEXT CHAPTER'}
           </span>
           <h2>
             {admin ? (
@@ -125,6 +133,12 @@ export default function DatabaseDashboard() {
                 Great learning starts
                 <br />
                 with a great academy.
+              </>
+            ) : student ? (
+              <>
+                Every skill starts with a step.
+                <br />
+                <span>Make yours today.</span>
               </>
             ) : (
               <>
@@ -136,9 +150,16 @@ export default function DatabaseDashboard() {
           <p>
             {admin
               ? 'Bring your people, courses and classrooms together. Everything you need to shape what comes next.'
-              : 'Your courses, classes and updates. One thoughtful space to keep moving forward.'}
+              : student
+                ? 'Stay curious. Keep showing up. The future you want is built one lesson at a time.'
+                : 'Your courses, classes and updates. One thoughtful space to keep moving forward.'}
           </p>
-          {role !== 'Student' && (
+          {student && (
+            <div className="student-quote-footer">
+              <span /> YOUR JOURNEY. YOUR PACE. YOUR POTENTIAL.
+            </div>
+          )}
+          {!student && (
             <div className="academy-hero-actions">
               <button
                 className="btn academy-gold-button"
@@ -158,7 +179,7 @@ export default function DatabaseDashboard() {
             </div>
           )}
         </div>
-        {role !== 'Student' && (
+        {!student && (
           <div className="academy-hero-art" aria-hidden="true">
             <div className="academy-orbit orbit-one" />
             <div className="academy-orbit orbit-two" />

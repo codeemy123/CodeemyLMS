@@ -863,6 +863,60 @@ textarea {
   z-index: 1;
   max-width: 600px;
 }
+.academy-hero.student-quote-banner {
+  min-height: 240px;
+  padding: clamp(26px, 4vw, 44px);
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 100% 0, #eaa47735, transparent 60%),
+    linear-gradient(115deg, #8d342c, #a3434c 60%, #803f62);
+}
+.student-quote-banner::after {
+  content: '\201D';
+  position: absolute;
+  right: 5%;
+  top: -65px;
+  font-family: Georgia, serif;
+  font-size: clamp(240px, 28vw, 420px);
+  line-height: 1;
+  color: #ffffff09;
+  pointer-events: none;
+  z-index: -1;
+}
+.student-quote-banner .academy-hero-copy {
+  max-width: 940px;
+}
+.student-quote-banner h2 {
+  font-size: clamp(27px, 3vw, 44px);
+  line-height: 1.18;
+  letter-spacing: -1px;
+  margin: 22px 0 16px;
+}
+.student-quote-banner h2 > span {
+  color: #ffdaa2;
+}
+.student-quote-banner .academy-hero-copy > p {
+  max-width: 640px;
+  line-height: 1.8;
+  color: #ffe8df;
+  margin-bottom: 0;
+}
+.student-quote-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 26px;
+  font-size: 10px;
+  line-height: 1.7;
+  letter-spacing: 1.5px;
+  color: #f4d3c1;
+}
+.student-quote-footer > span {
+  width: 28px;
+  height: 1px;
+  background: #f0c6a1;
+  flex-shrink: 0;
+}
 .academy-kicker {
   display: flex;
   align-items: center;
