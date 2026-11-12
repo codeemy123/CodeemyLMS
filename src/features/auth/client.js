@@ -1,4 +1,5 @@
 'use client';
+import { readAuthResponse } from './response.js';
 import { initializeApp, getApps } from 'firebase/app';
 import {
   getAuth,
@@ -17,7 +18,7 @@ let pending;
 export function clientAuth() {
   return (pending ||= (async () => {
     const response = await fetch('/api/auth/config', { cache: 'no-store' });
-    const config = await response.json();
+    const config = await readAuthResponse(response);
     if (!config.configured)
       throw new Error('Sign-in is not configured. Contact your administrator.');
     const app =
@@ -44,7 +45,7 @@ export async function login(email, password, google = false) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken: await credential.user.getIdToken() }),
     });
-    const data = await response.json();
+    const data = await readAuthResponse(response);
     if (!response.ok) throw new Error(data.error || 'Unable to create session.');
     if (!['ADMIN', 'MENTOR', 'STUDENT'].includes(data.role))
       throw new Error('Account role is invalid.');
@@ -65,7 +66,7 @@ export async function googleAccess() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken: await credential.user.getIdToken() }),
     });
-    const data = await response.json();
+    const data = await readAuthResponse(response);
     if (!response.ok) throw new Error(data.error || 'Unable to sign in.');
     if (data.needsRegistration === true) {
       completingRegistration = true;
@@ -153,7 +154,7 @@ export async function registerAccount(details, google = false) {
         message: details.message,
       }),
     });
-    const result = await response.json();
+    const result = await readAuthResponse(response);
     if (!response.ok) throw new Error(result.error || 'Registration could not be submitted.');
     return result;
   } finally {
