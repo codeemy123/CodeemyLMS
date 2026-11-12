@@ -138,40 +138,46 @@ export default function DatabaseDashboard() {
               ? 'Bring your people, courses and classrooms together. Everything you need to shape what comes next.'
               : 'Your courses, classes and updates. One thoughtful space to keep moving forward.'}
           </p>
-          <div className="academy-hero-actions">
-            <button
-              className="btn academy-gold-button"
-              onClick={() => go(admin ? 'Courses' : role === 'Student' ? 'My Courses' : 'Courses')}
-            >
-              <Plus size={16} />
-              {admin ? 'Manage courses' : 'Explore my courses'}
-              <ArrowUpRight size={16} />
-            </button>
-            {admin && (
-              <button className="academy-hero-link" onClick={() => go('Batches')}>
-                View batches <ArrowRight size={16} />
+          {role !== 'Student' && (
+            <div className="academy-hero-actions">
+              <button
+                className="btn academy-gold-button"
+                onClick={() =>
+                  go(admin ? 'Courses' : role === 'Student' ? 'My Courses' : 'Courses')
+                }
+              >
+                <Plus size={16} />
+                {admin ? 'Manage courses' : 'Explore my courses'}
+                <ArrowUpRight size={16} />
               </button>
-            )}
-          </div>
+              {admin && (
+                <button className="academy-hero-link" onClick={() => go('Batches')}>
+                  View batches <ArrowRight size={16} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
-        <div className="academy-hero-art" aria-hidden="true">
-          <div className="academy-orbit orbit-one" />
-          <div className="academy-orbit orbit-two" />
-          <div className="academy-art-tile tile-book">
-            <BookOpen size={35} />
+        {role !== 'Student' && (
+          <div className="academy-hero-art" aria-hidden="true">
+            <div className="academy-orbit orbit-one" />
+            <div className="academy-orbit orbit-two" />
+            <div className="academy-art-tile tile-book">
+              <BookOpen size={35} />
+            </div>
+            <div className="academy-art-tile tile-people">
+              <Users size={25} />
+            </div>
+            <div className="academy-art-tile tile-spark">
+              <Sparkles size={22} />
+            </div>
+            <div className="academy-art-label">
+              <span className="academy-live-dot" />
+              Built for brighter futures
+            </div>
+            <div className="academy-art-caption">LEARN. CONNECT. GROW.</div>
           </div>
-          <div className="academy-art-tile tile-people">
-            <Users size={25} />
-          </div>
-          <div className="academy-art-tile tile-spark">
-            <Sparkles size={22} />
-          </div>
-          <div className="academy-art-label">
-            <span className="academy-live-dot" />
-            Built for brighter futures
-          </div>
-          <div className="academy-art-caption">LEARN. CONNECT. GROW.</div>
-        </div>
+        )}
       </section>
       {error && (
         <div className="academy-error" role="alert">
