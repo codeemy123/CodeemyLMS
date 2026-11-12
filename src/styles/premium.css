@@ -3190,6 +3190,116 @@ body {
   text-align: center;
   padding: 48px 24px;
 }
+/* Bright orange navigation for every academy workspace. */
+.sidebar {
+  background: linear-gradient(155deg, #ffc783 0%, #ffa462 48%, #ff8c67 100%);
+  color: #532811;
+  box-shadow: 6px 0 28px #9d4e1510;
+}
+.sidebar .brand {
+  box-shadow: 0 8px 24px #a5511420;
+}
+.sidebar .workspace,
+.sidebar .sidebar-bottom {
+  color: #69321b;
+  font-weight: 600;
+}
+.sidebar .nav a {
+  color: #532811;
+  font-weight: 500;
+  border: 1px solid transparent;
+  font-size: 14px;
+}
+.sidebar .nav a svg {
+  color: #74381c;
+}
+.sidebar .nav a:hover {
+  background: #ffffff59;
+  color: #44200f;
+  border-color: #ffffff70;
+}
+.sidebar .nav a.active,
+.sidebar .nav a.active:hover {
+  background: #fff;
+  color: #a63c18;
+  border: 1px solid #fff;
+  box-shadow:
+    inset 4px 0 0 #bd471b,
+    0 5px 18px #a24f1720;
+  font-weight: 700;
+}
+.sidebar .nav a.active svg {
+  color: #b0431d;
+}
+.sidebar .nav-count {
+  background: #fff;
+  color: #963817;
+}
+.sidebar .nav::-webkit-scrollbar-thumb {
+  background: #ae571f66;
+  border-radius: 10px;
+}
+.sidebar .nav {
+  scrollbar-color: #ae571f66 transparent;
+}
+.sidebar .sidebar-bottom > .text-link {
+  color: #582713;
+  font-weight: 650;
+}
+.main .topbar {
+  background: linear-gradient(105deg, #ffcb8b 0%, #ffb576 52%, #ffa377 100%);
+  border-bottom: 1px solid #ef985b;
+  box-shadow: 0 3px 16px #b14d1010;
+}
+.main .topbar-title,
+.main .header-role {
+  color: #552b16;
+  font-weight: 600;
+}
+.main .header-divider {
+  color: #945333;
+}
+.main .header-dot {
+  background: #a8431c;
+  box-shadow: 0 0 0 5px #fff6;
+}
+.main .workspace-search {
+  background: #fff;
+  border: 1px solid #fff;
+  box-shadow: 0 2px 8px #a14e1210;
+  border-radius: 12px;
+}
+.main .workspace-search .global-search {
+  background: #fff;
+  color: #462719;
+}
+.main .workspace-search .global-search::placeholder {
+  color: #735d50;
+}
+.main .workspace-search > svg {
+  color: #9c542f;
+}
+.main .notification-button {
+  background: #fff;
+  border-color: #fff;
+  color: #89411f;
+}
+.main .profile-button {
+  color: #4c2714;
+  border-color: #c775454d;
+}
+.main .profile-button small {
+  color: #6e371d;
+  font-size: 12px;
+}
+.main .profile-chevron {
+  color: #6e371d;
+}
+.main .mobile-menu {
+  background: #fff;
+  color: #98401e;
+  border-radius: 10px;
+}
 @media (max-width: 1000px) {
   .personal-profile {
     grid-template-columns: 1fr;
