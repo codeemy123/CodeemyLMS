@@ -16,6 +16,7 @@ export async function profileDetails(db, actor) {
       role: true,
       status: true,
       profile_image: true,
+      created_at: true,
       ...(actor.role === 'STUDENT'
         ? {
             student_profiles: {
@@ -23,6 +24,7 @@ export async function profileDetails(db, actor) {
                 qualification: true,
                 department: true,
                 registration_number: true,
+                admission_date: true,
                 ...(collegeName ? { college_name: true } : {}),
               },
             },

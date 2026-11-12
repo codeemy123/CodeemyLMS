@@ -17,6 +17,7 @@ test('student basic profile remains available before and after college migration
     const result = await profileDetails(db, { id: 'own-user', role: 'STUDENT' });
     assert.equal(result.capabilities.collegeName, available);
     assert.equal(Boolean(selected.student_profiles.select.college_name), available);
+    assert.equal(selected.student_profiles.select.department, true);
     assert.equal(selected.profile_image, true);
   }
 });

@@ -20,7 +20,12 @@ export async function POST(request) {
     const account = await firebaseAuth().getUser(identity.uid);
     requireRegistrationPassword(identity, account);
     return Response.json(
-      await submitRegistration(getPrisma(), identity, { ...body, passwordReady: true }),
+      await submitRegistration(
+        getPrisma(),
+        identity,
+        { ...body, passwordReady: true },
+        new Date(account.metadata.creationTime),
+      ),
       {
         status: 201,
         headers: { 'Cache-Control': 'no-store' },

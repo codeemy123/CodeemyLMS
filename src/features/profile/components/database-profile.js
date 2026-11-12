@@ -81,6 +81,8 @@ export default function DatabaseProfile() {
     .slice(0, 2)
     .join('');
   const roleName = user.role.charAt(0) + user.role.slice(1).toLowerCase();
+  const joinedAt =
+    user.student_profiles?.admission_date || user.mentor_profiles?.created_at || user.created_at;
   return (
     <div className="personal-profile">
       <aside className="profile-identity-card">
@@ -183,7 +185,8 @@ export default function DatabaseProfile() {
             user.id +
             user.full_name +
             (user.phone || '') +
-            (user.student_profiles?.college_name || '')
+            (user.student_profiles?.college_name || '') +
+            (user.student_profiles?.department || '')
           }
           onSubmit={(e) => {
             e.preventDefault();
@@ -192,6 +195,31 @@ export default function DatabaseProfile() {
           }}
         >
           <div className="profile-details-grid">
+            {user.role === 'STUDENT' && (
+              <label>
+                Registration number
+                <input
+                  value={user.student_profiles?.registration_number || 'Not assigned'}
+                  readOnly
+                />
+              </label>
+            )}
+            <label>
+              {user.role === 'STUDENT' ? 'Admission date & time' : 'Account created'}
+              <input
+                value={
+                  joinedAt
+                    ? new Intl.DateTimeFormat('en-IN', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                        timeZone: 'Asia/Kolkata',
+                      }).format(new Date(joinedAt)) + ' IST'
+                    : 'Not available'
+                }
+                readOnly
+              />
+              <small>First account creation · managed automatically.</small>
+            </label>
             <label>
               Full name
               <input
@@ -225,13 +253,25 @@ export default function DatabaseProfile() {
               <input value={roleName} readOnly />
             </label>
             {user.role === 'STUDENT' && capabilities.collegeName && (
-              <label className="profile-wide">
+              <label>
                 College / institution
                 <input
                   name="collegeName"
                   defaultValue={user.student_profiles?.college_name || ''}
                   maxLength={255}
                   placeholder="Your college or institution"
+                  disabled={busy}
+                />
+              </label>
+            )}
+            {user.role === 'STUDENT' && (
+              <label>
+                Department
+                <input
+                  name="department"
+                  defaultValue={user.student_profiles?.department || ''}
+                  maxLength={150}
+                  placeholder="e.g. Computer Science"
                   disabled={busy}
                 />
               </label>

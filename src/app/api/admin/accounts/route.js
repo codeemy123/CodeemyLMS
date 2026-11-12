@@ -1,6 +1,7 @@
 import { authenticated } from '@/lib/server/auth';
 import { firebaseAuth } from '@/lib/server/firebase';
 import { roleAllowed, jsonBody, text, choice, ApiError } from '@/lib/server/api';
+import { ensureAcademicIdentity } from '@/lib/server/academic-identity';
 export const runtime = 'nodejs';
 export const POST = authenticated(async (request, _context, actor, db) => {
   roleAllowed(actor, ['ADMIN']);
@@ -20,15 +21,20 @@ export const POST = authenticated(async (request, _context, actor, db) => {
   });
   if (existing)
     throw new ApiError(409, 'Account already mapped. Existing permissions were preserved.');
-  const user = await db.users.create({
-    data: {
-      firebase_uid: uid,
-      email: identity.email,
-      full_name: text(body.fullName, 150),
-      role,
-      status: 'ACTIVE',
-    },
-    select: { id: true, email: true, role: true, status: true },
+  const user = await db.$transaction(async (tx) => {
+    const user = await tx.users.create({
+      data: {
+        firebase_uid: uid,
+        email: identity.email,
+        full_name: text(body.fullName, 150),
+        role,
+        status: 'ACTIVE',
+        created_at: new Date(identity.metadata.creationTime),
+      },
+      select: { id: true, email: true, role: true, status: true },
+    });
+    await ensureAcademicIdentity(tx, user, { createdAt: new Date(identity.metadata.creationTime) });
+    return user;
   });
   return { user };
 });

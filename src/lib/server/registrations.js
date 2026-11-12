@@ -1,4 +1,5 @@
 import { ApiError, choice, text, uuid } from './api.js';
+import { ensureAcademicIdentity } from './academic-identity.js';
 
 export const registrationActions = ['REGISTRATION_APPROVED', 'REGISTRATION_REJECTED'];
 export function requireRegistrationPassword(identity, account) {
@@ -16,7 +17,7 @@ export function requireRegistrationPassword(identity, account) {
     );
 }
 
-export async function submitRegistration(db, identity, body) {
+export async function submitRegistration(db, identity, body, accountCreatedAt) {
   if (!identity.email) throw new ApiError(400, 'An email address is required.');
   const role = choice(body.role, ['STUDENT', 'MENTOR']);
   const fullName = text(body.fullName, 150);
@@ -54,7 +55,13 @@ export async function submitRegistration(db, identity, body) {
         phone: phone || null,
         role,
         status: 'INACTIVE',
+        ...(accountCreatedAt ? { created_at: accountCreatedAt } : {}),
       },
+    });
+    await ensureAcademicIdentity(tx, user, {
+      collegeName: details.college,
+      qualification: details.qualification,
+      createdAt: accountCreatedAt,
     });
     const request = await tx.audit_logs.create({
       data: {
