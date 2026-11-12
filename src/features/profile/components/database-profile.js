@@ -1,9 +1,24 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Upload, Trash2, UserRound, ShieldCheck, Mail, CheckCircle2 } from 'lucide-react';
+import {
+  Camera,
+  Upload,
+  Trash2,
+  UserRound,
+  ShieldCheck,
+  Mail,
+  CheckCircle2,
+  Pencil,
+  LogOut,
+} from 'lucide-react';
 import { uploadFile } from '@/lib/uploads';
+import { useWorkspace } from '@/features/workspace/context/workspace-context';
 
 export default function DatabaseProfile() {
+  const { signOut } = useWorkspace();
+  const [editing, setEditing] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const detailsForm = useRef(null);
   const [user, setUser] = useState(null);
   const [capabilities, setCapabilities] = useState({});
   const [message, setMessage] = useState('');
@@ -179,6 +194,26 @@ export default function DatabaseProfile() {
             </button>
           )}
         </div>
+        <div className="profile-signout-section">
+          <button
+            type="button"
+            className="profile-signout-button"
+            disabled={busy || signingOut}
+            onClick={async () => {
+              setSigningOut(true);
+              setError('');
+              try {
+                if ((await signOut()) === false) setSigningOut(false);
+              } catch (e) {
+                setError(e.message || 'Unable to sign out. Please try again.');
+                setSigningOut(false);
+              }
+            }}
+          >
+            <LogOut size={19} /> {signingOut ? 'Signing out…' : 'Sign out'}
+          </button>
+          <small>Securely sign out of your CodeEmy account.</small>
+        </div>
       </aside>
       <section className="profile-details-card">
         <div className="profile-details-heading">
@@ -187,10 +222,29 @@ export default function DatabaseProfile() {
           </span>
           <div>
             <h2>Personal details</h2>
-            <p>A few details that make this workspace yours.</p>
+            <p>
+              {editing
+                ? 'Update your details, then save your changes.'
+                : 'Your saved account details. Select Edit profile to make changes.'}
+            </p>
           </div>
+          {!editing && (
+            <button
+              type="button"
+              className="btn secondary profile-edit-button"
+              disabled={busy || signingOut}
+              onClick={() => {
+                setEditing(true);
+                setMessage('');
+                setError('');
+              }}
+            >
+              <Pencil size={16} /> Edit profile
+            </button>
+          )}
         </div>
         <form
+          ref={detailsForm}
           key={
             user.id +
             user.full_name +
@@ -200,8 +254,12 @@ export default function DatabaseProfile() {
           }
           onSubmit={(e) => {
             e.preventDefault();
+            if (!editing || busy) return;
             const data = Object.fromEntries(new FormData(e.currentTarget));
-            perform(() => save(data), 'Your personal details have been saved.');
+            perform(async () => {
+              await save(data);
+              setEditing(false);
+            }, 'Your personal details have been saved.');
           }}
         >
           <div className="profile-details-grid">
@@ -234,6 +292,7 @@ export default function DatabaseProfile() {
               Full name
               <input
                 name="fullName"
+                readOnly={!editing}
                 defaultValue={user.full_name}
                 autoComplete="name"
                 required
@@ -250,6 +309,7 @@ export default function DatabaseProfile() {
               Phone number
               <input
                 name="phone"
+                readOnly={!editing}
                 defaultValue={user.phone || ''}
                 type="tel"
                 autoComplete="tel"
@@ -267,6 +327,7 @@ export default function DatabaseProfile() {
                 College / institution
                 <input
                   name="collegeName"
+                  readOnly={!editing}
                   defaultValue={user.student_profiles?.college_name || ''}
                   maxLength={255}
                   placeholder="Your college or institution"
@@ -279,6 +340,7 @@ export default function DatabaseProfile() {
                 Department
                 <input
                   name="department"
+                  readOnly={!editing}
                   defaultValue={user.student_profiles?.department || ''}
                   maxLength={150}
                   placeholder="e.g. Computer Science"
@@ -298,9 +360,25 @@ export default function DatabaseProfile() {
               <ShieldCheck size={16} />
               Your account role is managed by your academy.
             </p>
-            <button className="btn" disabled={busy} type="submit">
-              {busy ? 'Saving…' : 'Save changes'}
-            </button>
+            {editing && (
+              <div className="profile-edit-actions">
+                <button
+                  type="button"
+                  className="btn secondary"
+                  disabled={busy}
+                  onClick={() => {
+                    detailsForm.current?.reset();
+                    setEditing(false);
+                    setError('');
+                  }}
+                >
+                  Cancel
+                </button>
+                <button className="btn" disabled={busy} type="submit">
+                  {busy ? 'Saving…' : 'Save changes'}
+                </button>
+              </div>
+            )}
           </div>
         </form>
       </section>

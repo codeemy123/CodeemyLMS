@@ -318,13 +318,14 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
       await logout();
     } catch {
       setToast('Unable to sign out. Please try again.');
-      return;
+      return false;
     }
     setMobile(false);
     setModal(null);
     setAttempt(false);
     setResult(false);
     window.location.assign('/login');
+    return true;
   }
   function changeRole(r) {
     router.push(workspaceHref(r, 'Dashboard'));

@@ -71,6 +71,19 @@ try {
     await page
       .getByRole('heading', { name: 'Personal details', exact: true })
       .waitFor({ timeout: 45000 });
+    assert.equal(await page.getByLabel('Full name', { exact: true }).getAttribute('readonly'), '');
+    await page.getByRole('button', { name: 'Edit profile', exact: true }).click();
+    await page.getByLabel('Full name', { exact: true }).fill('Unsaved change');
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    assert.equal(
+      await page.getByLabel('Full name', { exact: true }).inputValue(),
+      'Profile Test User',
+    );
+    assert.equal(
+      (await db.users.findUnique({ where: { id: user.id } })).full_name,
+      'Profile Test User',
+    );
+    await page.getByRole('button', { name: 'Edit profile', exact: true }).click();
     await page.getByLabel('Full name', { exact: true }).fill('Updated Profile Test');
     await page.getByLabel('Phone number').fill('9876543210');
     if (role === 'STUDENT') {
@@ -85,6 +98,7 @@ try {
     const saved = await db.users.findUnique({ where: { id: user.id } });
     assert.equal(saved.full_name, 'Updated Profile Test');
     assert.equal(saved.phone, '9876543210');
+    assert.equal(await page.getByLabel('Full name', { exact: true }).getAttribute('readonly'), '');
     const uploadedResponse = page.waitForResponse(
       (r) => r.url().endsWith('/api/storage/upload') && r.request().method() === 'POST',
     );
@@ -193,6 +207,9 @@ try {
     await page.reload();
     await page.getByRole('heading', { name: 'Personal details', exact: true }).waitFor();
     assert.equal(await page.locator('.profile-portrait img').count(), 0);
+    await page.locator('.profile-signout-button').click();
+    await page.waitForURL('**/login');
+    assert.equal((await context.request.get(origin + '/api/auth/me')).status(), 401);
     console.log(
       'PASS ' +
         role +
