@@ -101,9 +101,15 @@ export default function DatabaseProfile() {
           ) : (
             <span>{initials}</span>
           )}
-          <span className="profile-camera-mark">
+          <button
+            type="button"
+            className="profile-camera-mark"
+            aria-label="Change profile photo"
+            disabled={busy}
+            onClick={() => photoInput.current?.click()}
+          >
             <Camera size={17} />
-          </span>
+          </button>
         </div>
         <h2>{user.full_name}</h2>
         <span className="profile-role-pill">{roleName}</span>

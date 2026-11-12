@@ -1,0 +1,272 @@
+.main .theme-toggle {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #6252a1;
+  background: #fff;
+  border: 1px solid #dedcf0;
+}
+.main .theme-toggle:hover {
+  background: #f2edff;
+}
+.main .profile-portrait .profile-camera-mark {
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px #34227512;
+}
+.main .profile-camera-mark:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.mobile-bottom-nav {
+  display: none;
+}
+@media (max-width: 760px) {
+  .main {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  .mobile-bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 18;
+    background: #fff;
+    border-top: 1px solid #e2dff0;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 24px #36256c0b;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  .mobile-bottom-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 54px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #62657b;
+  }
+  .mobile-bottom-nav a[aria-current='page'] {
+    color: #5940bc;
+    background: #f0ebff;
+  }
+  .bottom-nav-icon {
+    display: flex;
+    position: relative;
+  }
+  .bottom-nav-icon i {
+    width: 7px;
+    height: 7px;
+    background: #b32e62;
+    border-radius: 50%;
+    position: absolute;
+    top: -2px;
+    right: -5px;
+  }
+  .mobile-bottom-nav a:focus-visible {
+    outline: 2px solid #8a73d4;
+    outline-offset: -2px;
+  }
+  .main .topbar .top-right {
+    gap: 9px;
+    min-width: 0;
+  }
+  #toast {
+    bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 480px) {
+  .main .profile-button > div:last-of-type,
+  .main .profile-chevron {
+    display: none;
+  }
+  .main .profile-button {
+    padding-left: 9px;
+  }
+}
+/* Dark workspace keeps statuses and primary actions distinct. */
+[data-workspace-theme='dark'] .main .profile-remove-photo {
+  background: transparent;
+  color: #ffb2bc;
+}
+[data-workspace-theme='dark'] .main .profile-status {
+  color: #8bd4b0;
+}
+[data-workspace-theme='dark'] .main .profile-heading-icon {
+  background: #332b4c;
+  color: #cdbaff;
+}
+html[data-workspace-theme='dark'] {
+  color-scheme: dark;
+  background: #111522;
+}
+[data-workspace-theme='dark'] .main {
+  --ink: #edf0fb;
+  --muted: #bdc4d8;
+  --line: #353c52;
+  --bg: #111522;
+  background: #111522;
+  color: #edf0fb;
+}
+[data-workspace-theme='dark'] .main .content {
+  background: #111522;
+  color: #edf0fb;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(
+    .card,
+    .academy-panel,
+    .academy-metric,
+    .workflow-card,
+    .admin-collection-item,
+    .profile-identity-card,
+    .profile-details-card,
+    .assessment-access-box,
+    .approval-card,
+    .admin-collection-editor
+  ) {
+  background: #1b2133;
+  border-color: #353c52;
+  color: #edf0fb;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(
+    h1,
+    h2,
+    h3,
+    .page-title h1,
+    .card h2,
+    .card h3,
+    .academy-panel-heading h2,
+    .profile-details-heading h2,
+    .academy-empty h3,
+    .academy-metric strong,
+    .academy-metric-value
+  ) {
+  color: #edf0fb;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(
+    p,
+    .page-title p,
+    .card p,
+    .academy-muted,
+    .academy-empty p,
+    .workflow-card p,
+    .profile-details-heading p,
+    .admin-collection-item p,
+    .footer,
+    .content small,
+    .profile-identity-email,
+    .profile-section-label,
+    .profile-photo-controls-new > small,
+    .profile-details-grid small
+  ) {
+  color: #c1c9dc;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(
+    .content label,
+    .content .auth-form label,
+    .profile-details-grid label,
+    .content th,
+    .content td
+  ) {
+  color: #e0e5f4;
+}
+[data-workspace-theme='dark'] .main .topbar {
+  background: #1b2133;
+  border-color: #353c52;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(.topbar-title, .header-role, .profile-button, .profile-button small, .profile-chevron) {
+  color: #e0dcf6;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(
+    .theme-toggle,
+    .notification-button,
+    .mobile-menu,
+    .workspace-search,
+    .workspace-search .global-search
+  ) {
+  background: #252c42;
+  color: #dfd6ff;
+  border-color: #424964;
+}
+[data-workspace-theme='dark'] .main .content input:not([type='checkbox']):not([type='radio']),
+[data-workspace-theme='dark'] .main .content select,
+[data-workspace-theme='dark'] .main .content textarea {
+  background: #131a2b;
+  color: #edf0fb;
+  border-color: #4b5570;
+}
+[data-workspace-theme='dark'] .main :is(input, textarea)::placeholder {
+  color: #abb5ce;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(.profile-choose-photo, .profile-camera-mark, .btn.secondary) {
+  background: #262d43;
+  color: #ded6ff;
+  border-color: #505875;
+}
+[data-workspace-theme='dark'] .main :is(.tabs, .academy-panel-footer, thead, th) {
+  background: #252c42;
+  border-color: #414960;
+}
+[data-workspace-theme='dark'] .main .tabs button {
+  color: #d4dbed;
+}
+[data-workspace-theme='dark'] .main .tabs button.selected {
+  background: #403265;
+  color: #f3edff;
+  border-color: #706199;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(.text-link, .eyebrow, .academy-overline, .academy-text-button) {
+  color: #c6b3ff;
+}
+[data-workspace-theme='dark'] .main :is(.profile-role-pill, .approval-role) {
+  background: #332b4c;
+  color: #d7c7ff;
+  border-color: #665381;
+}
+[data-workspace-theme='dark'] .mobile-bottom-nav {
+  background: #1b2133;
+  border-color: #353c52;
+}
+[data-workspace-theme='dark'] .mobile-bottom-nav a {
+  color: #c2c9dc;
+}
+[data-workspace-theme='dark'] .mobile-bottom-nav a[aria-current='page'] {
+  color: #e1d3ff;
+  background: #3b2e60;
+}
+[data-workspace-theme='dark'] :is(.admin-record-dialog, .modal) {
+  background: #1b2133;
+  color: #edf0fb;
+  border-color: #414960;
+}
+[data-workspace-theme='dark'] :is(.admin-record-dialog, .modal) :is(input, select, textarea) {
+  background: #131a2b;
+  color: #edf0fb;
+  border-color: #4b5570;
+}

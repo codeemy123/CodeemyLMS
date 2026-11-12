@@ -151,6 +151,34 @@ try {
         .first()
         .evaluate((el) => parseFloat(getComputedStyle(el).fontSize) >= 16),
     );
+    const picker = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Change profile photo', exact: true }).click();
+    await (await picker).setFiles([]);
+    const bottom = page.getByRole('navigation', {
+      name: role.charAt(0) + role.slice(1).toLowerCase() + ' quick navigation',
+    });
+    assert.equal(await bottom.getByRole('link').count(), 4);
+    await page.getByRole('button', { name: 'Switch to dark theme' }).click();
+    assert.equal(await page.locator('html').getAttribute('data-workspace-theme'), 'dark');
+    await page.reload();
+    await page.getByRole('button', { name: 'Switch to light theme' }).waitFor();
+    assert.equal(await page.locator('html').getAttribute('data-workspace-theme'), 'dark');
+    await page.screenshot({
+      path: 'artifacts/profile-' + role.toLowerCase() + '-dark.png',
+      fullPage: true,
+    });
+    await page.getByRole('button', { name: 'Switch to light theme' }).click();
+    await bottom.getByRole('link', { name: 'Home', exact: true }).click();
+    await page.waitForURL('**/' + role.toLowerCase() + '/dashboard');
+    await bottom
+      .getByRole('link', { name: role === 'ADMIN' ? 'Courses' : 'Classes', exact: true })
+      .click();
+    await page.waitForURL(
+      '**/' + role.toLowerCase() + '/' + (role === 'ADMIN' ? 'courses' : 'classes'),
+    );
+    await bottom.getByRole('link', { name: 'Profile', exact: true }).click();
+    await page.waitForURL('**/' + role.toLowerCase() + '/profile');
+    await page.getByRole('heading', { name: 'Personal details', exact: true }).waitFor();
     assert.equal(
       await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
       false,

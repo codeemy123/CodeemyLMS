@@ -13,6 +13,7 @@ import DatabaseClasses from '@/features/database/classes';
 import { logout } from '@/features/auth/client';
 import Topbar from '@/components/layout/topbar';
 import Sidebar from '@/components/layout/sidebar';
+import MobileBottomNav from '@/components/layout/mobile-bottom-nav';
 import { useEffect, useState, useRef, useTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { BookOpen, CalendarDays, X } from 'lucide-react';
@@ -950,6 +951,7 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
           </footer>
         </div>
       </main>
+      <MobileBottomNav />
       {modal && (
         <div
           className="modal-backdrop"

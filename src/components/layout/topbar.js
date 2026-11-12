@@ -1,6 +1,7 @@
 'use client';
 import { Bell, Menu, X, Search, ChevronDown } from 'lucide-react';
 import { navigation } from '@/config/navigation';
+import ThemeToggle from './theme-toggle';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
 export default function Topbar() {
   const { role, mobile, setMobile, read, notify, go, records, actor } = useWorkspace();
@@ -39,6 +40,7 @@ export default function Topbar() {
             required
           />
         </form>
+        <ThemeToggle />
         <button
           className="notification-button"
           aria-label="Notifications"
