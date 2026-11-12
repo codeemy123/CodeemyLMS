@@ -39,6 +39,7 @@ export default function Login() {
           <a className="auth-brand" href="/">
             <img src="/codeemy-technologies.png" alt="CodeEmy" width="300" />
           </a>
+          <p className="auth-mobile-tagline">Learn. Build. Grow.</p>
           <div className="auth-visual-copy">
             <span className="auth-kicker">YOUR LEARNING JOURNEY</span>
             <h2>

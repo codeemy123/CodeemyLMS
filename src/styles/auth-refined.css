@@ -159,31 +159,48 @@
 .auth-header-wave {
   display: none;
 }
+.auth-mobile-tagline {
+  display: none;
+}
 @media (max-width: 760px) {
   .login-refined {
-    padding: 20px 14px max(24px, env(safe-area-inset-bottom));
+    padding: 0;
+    align-content: start;
+    background: #fff;
   }
   .login-refined .auth-card {
-    max-width: 440px;
-    min-height: 0;
+    max-width: 100%;
+    min-height: 100svh;
     display: flex;
     flex-direction: column;
-    border-radius: 24px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: linear-gradient(120deg, #4757dc, #7835cd);
   }
   .login-refined .auth-visual {
-    min-height: 0;
-    padding: 25px 26px 40px;
+    min-height: 182px;
+    padding: 27px 24px 48px;
     align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 0 0 auto;
   }
   .login-refined .auth-brand {
-    width: 175px;
+    width: 168px;
     padding: 9px 12px;
     border-radius: 13px;
   }
   .login-refined .auth-visual-copy {
-    margin: 17px 0 0;
-    padding: 0;
-    text-align: center;
+    display: none;
+  }
+  .login-refined .auth-mobile-tagline {
+    display: block;
+    margin: 0;
+    font-size: 15px;
+    letter-spacing: 1.4px;
+    color: #fff;
+    z-index: 1;
   }
   .login-refined .auth-visual-copy h2 {
     font-size: 27px;
@@ -197,7 +214,7 @@
     display: none;
   }
   .login-refined .auth-header-wave {
-    display: block;
+    display: none;
     position: absolute;
     bottom: -1px;
     left: 0;
@@ -206,14 +223,23 @@
     z-index: 2;
   }
   .login-refined .auth-form-panel {
-    padding: 16px 24px 26px;
+    position: relative;
+    z-index: 3;
+    margin: -26px auto 0;
+    max-width: 100%;
+    flex: 1;
+    padding: 30px max(26px, calc((100vw - 440px) / 2)) max(26px, env(safe-area-inset-bottom));
+    border-radius: 36px 36px 0 0;
+    box-shadow: 0 -8px 24px #33236e0a;
+    justify-content: flex-start;
   }
   .login-refined .auth-heading {
-    text-align: center;
+    text-align: left;
     margin-bottom: 24px;
   }
   .login-refined .auth-heading h1 {
-    font-size: 31px;
+    font-size: 34px;
+    margin-top: 0;
     margin-bottom: 8px;
   }
   .login-refined .auth-heading p {
@@ -225,13 +251,26 @@
   }
   .login-refined .auth-disclaimer {
     font-size: 13px;
+    max-width: 340px;
+    margin: 18px auto 0;
+  }
+  .login-refined .auth-google,
+  .login-refined .auth-submit {
+    min-height: 52px;
+  }
+  .login-refined .auth-input-wrap {
+    min-height: 52px;
+    background: #f8f8fd;
+  }
+  .login-refined .auth-divider {
+    margin: 20px 0;
   }
 }
 @media (max-width: 359px) {
   .login-refined {
-    padding: 12px 8px;
+    padding: 0;
   }
   .login-refined .auth-form-panel {
-    padding: 14px 18px 24px;
+    padding: 26px 20px 24px;
   }
 }
