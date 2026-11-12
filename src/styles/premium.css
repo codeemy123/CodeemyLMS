@@ -1585,7 +1585,7 @@ textarea {
 }
 .auth-shell,
 .registration-shell {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Times New Roman', Times, serif;
   -webkit-font-smoothing: antialiased;
 }
 .auth-shell button,
@@ -2417,7 +2417,7 @@ select:focus-visible {
   color: #b95330;
 }
 .registration-shell .auth-google {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Times New Roman', Times, serif;
   font-size: 16px;
   font-weight: 600;
   color: #352b26;
