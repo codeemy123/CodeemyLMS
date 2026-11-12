@@ -11,7 +11,9 @@ if (process.env.TEST_DB_PROXY_PORT) {
   url.port = process.env.TEST_DB_PROXY_PORT;
   process.env.DATABASE_URL = url.href;
 }
-const origin = 'http://127.0.0.1:3005';
+const origin = process.argv.includes('--live')
+  ? 'https://lerno.codeemy.in'
+  : 'http://127.0.0.1:3005';
 const db = getPrisma(),
   auth = getAuth(
     initializeApp(
@@ -412,6 +414,9 @@ try {
     await db.student_queries.delete({ where: { id: created.query } }).catch(() => {});
   await db.notifications.deleteMany({ where: { user_id: { in: ids } } });
   await db.audit_logs.deleteMany({ where: { user_id: { in: ids } } });
+  await db.audit_logs.deleteMany({
+    where: { action: 'STUDENT_NUMBER_ALLOCATED', entity_id: { in: ids } },
+  });
   if (created.course) {
     await db.projects.deleteMany({ where: { course_id: created.course } });
     await db.batches.deleteMany({ where: { course_id: created.course } });

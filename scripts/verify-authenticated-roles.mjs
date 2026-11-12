@@ -8,7 +8,9 @@ import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getPrisma } from '../src/lib/prisma.js';
 config({ path: ['.env.local', '.env'], quiet: true });
-const origin = process.env.AUTH_TEST_ORIGIN || 'http://127.0.0.1:3005';
+const origin =
+  process.env.AUTH_TEST_ORIGIN ||
+  (process.argv.includes('--live') ? 'https://lerno.codeemy.in' : 'http://127.0.0.1:3005');
 if (
   !['127.0.0.1', 'localhost'].includes(new URL(origin).hostname) &&
   !(
@@ -17,6 +19,7 @@ if (
     [
       'codeemy-lms-796236466632.asia-south1.run.app',
       'codeemy-lms-ro3s2c3rda-el.a.run.app',
+      'lerno.codeemy.in',
     ].includes(new URL(origin).hostname)
   )
 )
@@ -322,6 +325,9 @@ try {
   if (courses.length) await db.courses.deleteMany({ where: { id: { in: courses } } });
   if (users.length) {
     await db.audit_logs.deleteMany({ where: { user_id: { in: users.map((u) => u.id) } } });
+    await db.audit_logs.deleteMany({
+      where: { action: 'STUDENT_NUMBER_ALLOCATED', entity_id: { in: users.map((u) => u.id) } },
+    });
     await db.users.deleteMany({ where: { id: { in: users.map((u) => u.id) } } });
   }
   for (const uid of firebaseUsers) await auth.deleteUser(uid);
