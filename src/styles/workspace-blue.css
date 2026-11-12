@@ -1,0 +1,240 @@
+/* Shared Student, Mentor and Admin palette; workspace surfaces stay white. */
+.main .academy-metric-value,
+.main .academy-metric strong {
+  color: #34325e;
+}
+.main .academy-metric-top,
+.main .academy-panel-heading,
+.main .academy-text-button {
+  color: #7260ad;
+}
+.main .academy-metric:hover {
+  border-color: #c6b8eb;
+  box-shadow: 0 10px 24px #5d42b510;
+}
+.main .academy-empty h3 {
+  color: #484263;
+}
+.main .academy-empty-icon,
+.main .academy-empty-art {
+  color: #8370bb;
+  background: #f3effc;
+  border-color: #e4dcf5;
+}
+.main .approval-avatar,
+.main .profile-button .avatar {
+  background: linear-gradient(135deg, #c9dfff, #dbbef1);
+  color: #4d367c;
+}
+.main .approval-summary button.selected {
+  background: #f2edff;
+  border-color: #d3c5ed;
+}
+.main .academy-step-number {
+  background: #f3effc;
+  color: #7058aa;
+  border-color: #e4dcf5;
+}
+.main,
+.sidebar {
+  --green: #5541c9;
+  --line: #e3e5f1;
+  --ink: #252b45;
+  --muted: #5d647c;
+}
+.sidebar {
+  background:
+    radial-gradient(ellipse at 0 0, #39b4f37a, transparent 65%),
+    linear-gradient(160deg, #4541ce 0%, #633acb 54%, #4731a8 100%);
+  color: #fff;
+  border-right: 1px solid #5142bb;
+  box-shadow: 5px 0 26px #4932a618;
+}
+.sidebar .brand {
+  box-shadow: 0 8px 24px #29206924;
+}
+.sidebar .workspace,
+.sidebar .sidebar-bottom {
+  color: #e7e4ff;
+}
+.sidebar .nav a,
+.sidebar .nav a svg {
+  color: #f2efff;
+}
+.sidebar .nav a:hover {
+  background: #ffffff18;
+  color: #fff;
+  border-color: #ffffff24;
+}
+.sidebar .nav a.active,
+.sidebar .nav a.active:hover {
+  background: #fff;
+  color: #4931a9;
+  border-color: #fff;
+  box-shadow:
+    inset 4px 0 0 #a69af1,
+    0 6px 20px #29206e25;
+}
+.sidebar .nav a.active svg {
+  color: #6047c4;
+}
+.sidebar .nav-count {
+  color: #4f35ae;
+  background: #fff;
+}
+.sidebar .nav {
+  scrollbar-color: #c9bdff80 transparent;
+}
+.sidebar .nav::-webkit-scrollbar-thumb {
+  background: #c9bdff80;
+}
+.sidebar .sidebar-bottom > .text-link {
+  color: #fff;
+}
+.main .topbar {
+  background: linear-gradient(105deg, #edf3ff 0%, #f2efff 65%, #eee8fc 100%);
+  border-bottom: 1px solid #dddff2;
+  box-shadow: 0 3px 16px #4932a608;
+}
+.main .topbar-title,
+.main .header-role,
+.main .profile-button,
+.main .profile-button small,
+.main .profile-chevron {
+  color: #413b69;
+}
+.main .header-divider {
+  color: #9086ae;
+}
+.main .header-dot {
+  background: #7652d3;
+  box-shadow: 0 0 0 5px #7652d310;
+}
+.main .workspace-search {
+  border-color: #dfe0ef;
+  box-shadow: none;
+}
+.main .workspace-search .global-search {
+  color: #34334b;
+}
+.main .workspace-search .global-search::placeholder {
+  color: #6b6c83;
+}
+.main .workspace-search > svg,
+.main .notification-button,
+.main .mobile-menu {
+  color: #6252a1;
+}
+.main .notification-button {
+  border-color: #dedcf0;
+}
+.main .profile-button {
+  border-color: #c7c0e24d;
+}
+.main .btn,
+.main .content .auth-form > button:not(.btn),
+.main .academy-activate-button {
+  background: linear-gradient(110deg, #5141d5, #823bd3);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 5px 16px #6350c51c;
+}
+.main .btn:hover,
+.main .content .auth-form > button:not(.btn):hover {
+  background: linear-gradient(110deg, #4533bd, #7030bc);
+  color: #fff;
+}
+.main .btn.secondary,
+.main .btn.secondary:hover {
+  background: #f7f5ff;
+  color: #514194;
+  border: 1px solid #ded8ef;
+  box-shadow: none;
+}
+.main .text-link,
+.main .eyebrow,
+.main .breadcrumb,
+.main .academy-overline {
+  color: #63519b;
+}
+.main .academy-hero,
+.main .banner {
+  background:
+    radial-gradient(ellipse at 0 0, #38b9f350, transparent 65%),
+    linear-gradient(120deg, #4840ce, #7339c9 65%, #5031a7);
+  box-shadow: 0 12px 30px #4932a614;
+}
+.main .academy-hero h2,
+.main .banner h2 {
+  color: #fff;
+}
+.main .academy-hero p,
+.main .banner p,
+.main .academy-kicker,
+.main .banner .tag,
+.main .academy-hero-link {
+  color: #eeeaff;
+}
+.main .academy-live-dot {
+  background: #dbd0ff;
+  box-shadow: 0 0 0 4px #dbd0ff20;
+}
+.main .academy-dashboard .academy-gold-button {
+  background: #fff;
+  color: #5535ac;
+  border-color: #fff;
+}
+.main .progress i,
+.workspace-navigation-progress {
+  background: linear-gradient(100deg, #5d69df, #8d4ed6);
+}
+.main .tabs {
+  background: #f4f3fb;
+  border-color: #e2dff0;
+}
+.main .tabs button {
+  color: #665d7d;
+}
+.main .tabs button.selected {
+  background: #ede7fc;
+  color: #5136a2;
+  border-color: #cfc2ef;
+}
+.main .sage,
+.main .academy-icon.sage {
+  background: #edf0ff;
+  color: #5b55bc;
+}
+.main .sand,
+.main .academy-icon.sand {
+  background: #f1ecff;
+  color: #7753b8;
+}
+.main .lavender,
+.main .academy-icon.lavender {
+  background: #eaf3ff;
+  color: #507ec0;
+}
+.main .content input:focus,
+.main .content select:focus,
+.main .content textarea:focus {
+  border-color: #8570d2;
+  box-shadow: 0 0 0 3px #8570d218;
+}
+.main button:focus-visible,
+.main a:focus-visible,
+.sidebar a:focus-visible {
+  outline-color: #a89ae6;
+}
+.main .workflow-card blockquote {
+  border-color: #8b72cf;
+}
+.main .profile-avatar {
+  background: linear-gradient(135deg, #d6e5ff, #dfd1f4);
+  color: #57438a;
+}
+.main .admin-record-actions .admin-remove-button {
+  background: #fff5f5;
+  color: #a63340;
+  border-color: #edc9d0;
+}
