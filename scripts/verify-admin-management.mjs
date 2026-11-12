@@ -1,3 +1,4 @@
+import { assertPortalRedirect } from './assert-portal-redirect.mjs';
 import fs from 'node:fs';
 import { chromium } from '@playwright/test';
 import { config } from 'dotenv';
@@ -86,11 +87,8 @@ try {
     assert.equal((await me.json()).user.id, user.id);
     for (const target of ['admin', 'mentor', 'student']) {
       const portal = await call(role, '/' + target + '/dashboard');
-      assert.equal(
-        portal.status,
-        target === role.toLowerCase() ? 200 : 307,
-        'Role portal ' + role + ' -> ' + target,
-      );
+      if (target === role.toLowerCase()) assert.equal(portal.status, 200);
+      else await assertPortalRedirect(portal, '/' + role.toLowerCase() + '/dashboard');
     }
   }
   console.log(

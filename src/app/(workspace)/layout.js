@@ -1,4 +1,11 @@
 import WorkspaceLayout from '@/components/layout/workspace-layout';
-export default function Layout({ children }) {
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { requireWorkspaceRole } from '@/lib/server/workspace-access';
+export const runtime = 'nodejs';
+export default async function Layout({ children }) {
+  const role = (await headers()).get('x-codeemy-workspace')?.toUpperCase();
+  if (!['ADMIN', 'MENTOR', 'STUDENT'].includes(role)) redirect('/login');
+  await requireWorkspaceRole(role);
   return <WorkspaceLayout>{children}</WorkspaceLayout>;
 }

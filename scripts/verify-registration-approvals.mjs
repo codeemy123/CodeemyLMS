@@ -6,6 +6,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { chromium } from '@playwright/test';
 import { getPrisma } from '../src/lib/prisma.js';
 import fs from 'node:fs';
+import { assertPortalRedirect } from './assert-portal-redirect.mjs';
 config({ path: ['.env.local', '.env'], quiet: true });
 const origin = process.env.REGISTRATION_TEST_ORIGIN || 'http://127.0.0.1:3004';
 const target = new URL(origin);
@@ -132,7 +133,10 @@ try {
   assert.equal((await approved.json()).role, 'STUDENT');
   const studentCookie = approved.headers.get('set-cookie').split(';')[0];
   assert.equal((await request('/student/dashboard', 'GET', null, null, studentCookie)).status, 200);
-  assert.equal((await request('/admin/dashboard', 'GET', null, null, studentCookie)).status, 307);
+  await assertPortalRedirect(
+    await request('/admin/dashboard', 'GET', null, null, studentCookie),
+    '/student/dashboard',
+  );
   console.log(
     'PASS Admin browser review/approval activates only Student role; approved user can sign in',
   );
@@ -270,7 +274,10 @@ try {
   assert.equal((await mentorLogin.json()).role, 'MENTOR');
   const mentorCookie = mentorLogin.headers.get('set-cookie').split(';')[0];
   assert.equal((await request('/mentor/dashboard', 'GET', null, null, mentorCookie)).status, 200);
-  assert.equal((await request('/admin/dashboard', 'GET', null, null, mentorCookie)).status, 307);
+  await assertPortalRedirect(
+    await request('/admin/dashboard', 'GET', null, null, mentorCookie),
+    '/mentor/dashboard',
+  );
   const people = await request('/api/people', 'GET', null, null, adminCookie);
   assert.equal((await people.json()).users.find((u) => u.email === emails[3]).status, 'ACTIVE');
   await mentorContext.close();
