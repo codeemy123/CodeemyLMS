@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 import { login, authMessage } from '@/features/auth/client';
 import RegistrationScreen from '@/features/auth/components/registration-screen';
+import LegalFooter from '@/components/legal/legal-footer';
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -160,6 +161,7 @@ export default function Login() {
             Your administrator assigns your workspace access. Contact your academy if your account
             has not been activated.
           </p>
+          <LegalFooter newTab />
         </div>
       </div>
     </section>

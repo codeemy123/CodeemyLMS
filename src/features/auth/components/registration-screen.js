@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import LegalFooter from '@/components/legal/legal-footer';
 import { ArrowRight, ShieldCheck, Clock3, CheckCircle2, GraduationCap, Users } from 'lucide-react';
 import {
   registerAccount,
@@ -347,6 +348,17 @@ export default function RegistrationScreen({ initialGoogleProfile = null, onCanc
                   {message}
                 </p>
               )}
+              <p className="registration-policy-notice">
+                Before requesting access, please read our{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer">
+                  Terms &amp; Conditions
+                </a>{' '}
+                and{' '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">
+                  Privacy Policy
+                </a>
+                .
+              </p>
               <button className="btn" disabled={busy}>
                 {busy ? 'Submitting...' : 'Request academy access'}
                 <ArrowRight size={16} />
@@ -361,6 +373,7 @@ export default function RegistrationScreen({ initialGoogleProfile = null, onCanc
           <Clock3 size={14} /> Access is activated after your academy reviews your request.
         </div>
       </main>
+      <LegalFooter newTab />
     </section>
   );
 }

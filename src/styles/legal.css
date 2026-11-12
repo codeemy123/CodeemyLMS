@@ -1,0 +1,175 @@
+.legal-footer {
+  text-align: center;
+  padding: 22px 0 8px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+.registration-policy-notice {
+  font-size: 14px;
+  color: #50596c;
+  line-height: 1.7;
+}
+.registration-policy-notice a {
+  color: #59419f;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.legal-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px 12px;
+}
+.legal-footer nav a {
+  color: #59419f;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.legal-footer nav > span {
+  color: #858197;
+}
+.legal-footer p,
+.main .legal-footer p {
+  font-size: 13px;
+  color: #60677b;
+  line-height: 1.6;
+  margin: 12px 0 0;
+}
+.main .legal-footer {
+  margin-top: 30px;
+  border-top: 1px solid #e1e5ef;
+  padding-top: 22px;
+}
+.auth-form-panel .legal-footer {
+  margin-top: 18px;
+  border-top: 1px solid #e7e4f1;
+}
+.registration-shell > .legal-footer {
+  max-width: 700px;
+  margin: auto;
+  padding: 25px 18px;
+}
+.policy-shell {
+  min-height: 100svh;
+  padding: 28px clamp(18px, 5vw, 70px);
+  background: #f5f6fc;
+  color: #30364d;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+.policy-header {
+  max-width: 1000px;
+  margin: 0 auto 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.policy-header img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: #fff;
+  padding: 12px;
+  border-radius: 14px;
+}
+.policy-header > a:last-child {
+  color: #59419f;
+  font-size: 15px;
+  font-weight: 600;
+}
+.policy-document {
+  max-width: 1000px;
+  margin: auto;
+  background: #fff;
+  border: 1px solid #e3e3f0;
+  border-radius: 24px;
+  padding: clamp(24px, 5vw, 60px);
+}
+.policy-document h1 {
+  font:
+    700 clamp(32px, 5vw, 44px)/1.2 'Segoe UI',
+    Arial,
+    sans-serif;
+  letter-spacing: -1px;
+  color: #27243c;
+  margin: 12px 0;
+}
+.policy-document h2 {
+  color: #37304f;
+  font:
+    650 22px/1.4 'Segoe UI',
+    Arial,
+    sans-serif;
+  margin: 0 0 12px;
+}
+.policy-document p {
+  font-size: 16px;
+  line-height: 1.85;
+  color: #50596c;
+}
+.policy-document .policy-kicker {
+  font-size: 12px;
+  color: #63528d;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+.policy-document .policy-updated {
+  font-size: 14px;
+  color: #697084;
+}
+.policy-contents {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+  padding: 22px;
+  background: #f6f3fe;
+  border-radius: 14px;
+  margin: 30px 0;
+}
+.policy-contents a,
+.policy-document p a {
+  color: #5a3ca0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.policy-document section {
+  padding-top: 18px;
+  margin-top: 18px;
+  scroll-margin-top: 24px;
+}
+.policy-document section + section {
+  border-top: 1px solid #e9e8f1;
+}
+[data-workspace-theme='dark'] .main .legal-footer {
+  border-color: #353c52;
+}
+[data-workspace-theme='dark'] .main .legal-footer nav a {
+  color: #c8b4ff;
+}
+[data-workspace-theme='dark'] .main .legal-footer p {
+  color: #bbc4d9;
+}
+@media (max-width: 600px) {
+  .policy-header img {
+    width: 150px;
+  }
+  .policy-header > a:last-child {
+    font-size: 14px;
+  }
+  .policy-contents {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+  .policy-document h2 {
+    font-size: 20px;
+  }
+  .policy-document {
+    border-radius: 18px;
+  }
+}
