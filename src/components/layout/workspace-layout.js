@@ -13,7 +13,7 @@ import DatabaseClasses from '@/features/database/classes';
 import { logout } from '@/features/auth/client';
 import Topbar from '@/components/layout/topbar';
 import Sidebar from '@/components/layout/sidebar';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { BookOpen, CalendarDays, X } from 'lucide-react';
 import { resolveWorkspaceRoute, workspaceHref } from '@/lib/routes';
@@ -31,8 +31,9 @@ import { workspaceView } from '@/lib/workspace-view';
 import { renameWorkflow } from '@/lib/workspace-renames';
 import useAssessmentAttempt from '@/features/assessments/use-assessment-attempt';
 
-export default function WorkspaceLayout({ children }) {
-  const [actor, setActor] = useState(null);
+export default function WorkspaceLayout({ children, initialActor = null }) {
+  const [actor, setActor] = useState(initialActor);
+  const [navigationPending, startNavigation] = useTransition();
   const [today, setToday] = useState('');
   useEffect(() => {
     setToday(
@@ -50,10 +51,10 @@ export default function WorkspaceLayout({ children }) {
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => setActor(data?.user || null))
         .catch(() => {});
-    refresh();
+    if (!initialActor) refresh();
     window.addEventListener('codeemy-profile-updated', refresh);
     return () => window.removeEventListener('codeemy-profile-updated', refresh);
-  }, []);
+  }, [initialActor]);
   const router = useRouter();
   const pathname = usePathname();
   const [courses, setCourses] = useState(() => structuredClone(initialCourses));
@@ -138,9 +139,11 @@ export default function WorkspaceLayout({ children }) {
           ...n,
           description: n.message,
           page:
-            role === 'Admin' && n.type === 'ACCOUNT_APPROVAL'
-              ? 'Account Approvals'
-              : 'Notifications',
+            n.type === 'ASSESSMENT_REOPEN'
+              ? 'Assessments'
+              : role === 'Admin' && n.type === 'ACCOUNT_APPROVAL'
+                ? 'Account Approvals'
+                : 'Notifications',
         })),
       );
       setNotificationError('');
@@ -286,11 +289,15 @@ export default function WorkspaceLayout({ children }) {
   const visible = workspaceView(role, courses, students, baseRows, workflows);
   function go(p, d = null) {
     const href = workspaceHref(role, p, d);
+    if (href === pathname) {
+      setMobile(false);
+      return;
+    }
     if (
       !window.dispatchEvent(
         new CustomEvent('codeemy-assessment-leave', {
           cancelable: true,
-          detail: { navigate: () => router.push(href) },
+          detail: { navigate: () => startNavigation(() => router.push(href)) },
         }),
       )
     )
@@ -302,7 +309,7 @@ export default function WorkspaceLayout({ children }) {
     setMobile(false);
     setAttempt(false);
     setResult(false);
-    router.push(href);
+    startNavigation(() => router.push(href));
   }
   async function signOut() {
     try {
@@ -799,6 +806,12 @@ export default function WorkspaceLayout({ children }) {
       )}
       <main className="main">
         <Topbar />
+        {navigationPending && (
+          <div className="navigation-progress" role="status" aria-label="Opening page">
+            <span />
+            <span className="sr-only">Opening page…</span>
+          </div>
+        )}
         <div className="content">
           <div className="eyebrow">
             <button className="text-link" onClick={() => go('Dashboard')}>

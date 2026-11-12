@@ -1,18 +1,35 @@
 'use client';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useState } from 'react';
 import { LogOut } from 'lucide-react';
 import { navigation } from '@/config/navigation';
 import { workspaceHref } from '@/lib/routes';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
+function NavigationLink({ onNavigate, children, ...props }) {
+  const [prefetch, setPrefetch] = useState(false);
+  return (
+    <Link
+      {...props}
+      prefetch={prefetch}
+      onMouseEnter={() => setPrefetch(true)}
+      onFocus={() => setPrefetch(true)}
+      onTouchStart={() => setPrefetch(true)}
+      onNavigate={onNavigate}
+    >
+      {children}
+    </Link>
+  );
+}
 export default function Sidebar() {
   const { role, page, mobile, unreadCount, approvalCount, go, changeRole, signOut } =
     useWorkspace();
   return (
     <aside className={'sidebar ' + (mobile ? 'open' : '')}>
-      <a
+      <NavigationLink
         className="brand"
         href={workspaceHref(role, 'Dashboard')}
-        onClick={(e) => {
+        onNavigate={(e) => {
           e.preventDefault();
           go('Dashboard');
         }}
@@ -26,16 +43,16 @@ export default function Sidebar() {
           loading="eager"
           unoptimized
         />
-      </a>
+      </NavigationLink>
       <div className="workspace">{role.toUpperCase()} WORKSPACE</div>
       <nav className="nav" aria-label={role + ' navigation'}>
         {navigation[role].map(([n, Icon]) => (
-          <a
+          <NavigationLink
             key={n}
             href={workspaceHref(role, n)}
             className={page === n ? 'active' : ''}
             aria-current={page === n ? 'page' : undefined}
-            onClick={(e) => {
+            onNavigate={(e) => {
               e.preventDefault();
               go(n);
             }}
@@ -48,7 +65,7 @@ export default function Sidebar() {
             {n === 'Notifications' && unreadCount > 0 && (
               <span className="nav-count">{unreadCount}</span>
             )}
-          </a>
+          </NavigationLink>
         ))}
       </nav>
       <div className="sidebar-bottom">

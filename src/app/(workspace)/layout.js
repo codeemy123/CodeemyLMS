@@ -6,6 +6,6 @@ export const runtime = 'nodejs';
 export default async function Layout({ children }) {
   const role = (await headers()).get('x-codeemy-workspace')?.toUpperCase();
   if (!['ADMIN', 'MENTOR', 'STUDENT'].includes(role)) redirect('/login');
-  await requireWorkspaceRole(role);
-  return <WorkspaceLayout>{children}</WorkspaceLayout>;
+  const actor = await requireWorkspaceRole(role);
+  return <WorkspaceLayout initialActor={actor || null}>{children}</WorkspaceLayout>;
 }
