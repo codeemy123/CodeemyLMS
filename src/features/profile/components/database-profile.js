@@ -61,6 +61,14 @@ export default function DatabaseProfile() {
       setBusy(false);
     }
   }
+  async function savePhoto(selected) {
+    await perform(async () => {
+      const uploaded = await uploadFile(selected);
+      await save({ photo: uploaded.data });
+      setFile(null);
+      if (photoInput.current) photoInput.current.value = '';
+    }, 'Profile photo saved. It will stay after refresh.');
+  }
   if (!user)
     return (
       <section className="profile-loading card">
@@ -131,25 +139,21 @@ export default function DatabaseProfile() {
                   return;
                 }
                 setFile(selected);
+                savePhoto(selected);
               }}
             />
           </label>
-          <small>{file ? file.name : 'PNG, JPG, WebP or GIF · Maximum 5 MB'}</small>
+          <small>
+            {file
+              ? busy
+                ? 'Saving your photo…'
+                : 'Photo not saved. Please retry below.'
+              : 'PNG, JPG, WebP or GIF · Maximum 5 MB · Saves automatically'}
+          </small>
           {file && (
-            <button
-              className="btn"
-              disabled={busy}
-              onClick={() =>
-                perform(async () => {
-                  const uploaded = await uploadFile(file);
-                  await save({ photo: uploaded.data });
-                  setFile(null);
-                  if (photoInput.current) photoInput.current.value = '';
-                }, 'Profile photo updated.')
-              }
-            >
+            <button className="btn" disabled={busy} onClick={() => savePhoto(file)}>
               <Upload size={16} />
-              {busy ? 'Saving…' : 'Upload profile photo'}
+              {busy ? 'Saving…' : 'Retry photo upload'}
             </button>
           )}
           {(user.profile_image || file) && (

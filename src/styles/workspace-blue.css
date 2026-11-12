@@ -1,4 +1,185 @@
 /* Shared Student, Mentor and Admin palette; workspace surfaces stay white. */
+.main,
+.sidebar,
+.main h1,
+.main h2,
+.main h3,
+.sidebar .nav a {
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+.main {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.main .content small,
+.main .approval-person small,
+.main .approval-date,
+.main .admin-record-hint,
+.main .admin-collection-item small,
+.main .footer {
+  font-size: 14px;
+  color: #58647a;
+  line-height: 1.6;
+}
+.main .approval-status,
+.main .approval-role,
+.main .profile-role-pill {
+  font-size: 13px;
+}
+.main .admin-collection-item p,
+.main .admin-record-dialog > p,
+.main .profile-details-heading p {
+  font-size: 16px;
+  color: #4d576d;
+}
+.sidebar .nav a {
+  font-size: 16px;
+  line-height: 1.4;
+  min-height: 48px;
+  font-weight: 600;
+}
+.sidebar .workspace,
+.sidebar .sidebar-bottom {
+  font-size: 13px;
+  letter-spacing: 1.2px;
+}
+.sidebar .sidebar-bottom > .text-link {
+  font-size: 15px;
+  min-height: 44px;
+}
+.main .topbar-title,
+.main .profile-button {
+  font-size: 15px;
+}
+.main .page-title p,
+.main .card p,
+.main .academy-muted,
+.main .academy-empty p,
+.main .academy-metric > span:last-child,
+.main .workflow-card p {
+  font-size: 16px;
+  color: #4d576d;
+  line-height: 1.7;
+}
+.main .content label,
+.main .content .auth-form label,
+.main .profile-details-grid label {
+  font-size: 16px;
+  color: #303b51;
+  font-weight: 600;
+}
+.main .content input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.main .content select,
+.main .content textarea {
+  font-size: 16px;
+  color: #303b51;
+}
+.main .content input::placeholder,
+.main .content textarea::placeholder {
+  color: #6c7487;
+  opacity: 1;
+}
+.main .content .btn,
+.main .content .auth-form > button {
+  font-size: 15px;
+  min-height: 44px;
+}
+.main .content th,
+.main .content td {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.main .academy-overline,
+.main .profile-section-label {
+  font-size: 12px;
+  color: #62518d;
+}
+.main .profile-details-grid small,
+.main .profile-photo-controls-new > small,
+.main .profile-save-row > p,
+.main .admin-record-hint,
+.main .admin-collection-item small {
+  font-size: 14px;
+  color: #58647a;
+  line-height: 1.6;
+}
+.main .profile-identity-email,
+.main .profile-status {
+  font-size: 15px;
+}
+.main .profile-portrait {
+  width: 120px;
+  height: 120px;
+  flex: 0 0 120px;
+  isolation: isolate;
+}
+.main .profile-portrait > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 120px;
+  height: 120px;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+}
+.main .profile-portrait .profile-camera-mark {
+  z-index: 1;
+  color: #6651a3;
+}
+.main .profile-choose-photo,
+.main .profile-remove-photo {
+  font-size: 16px;
+  min-height: 48px;
+}
+.main .profile-photo-controls-new > small {
+  overflow-wrap: anywhere;
+}
+.main .profile-button .profile-avatar-image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.main .profile-button .avatar {
+  position: relative;
+  overflow: hidden;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  flex: 0 0 40px;
+}
+@media (max-width: 700px) {
+  .main .page-title h1 {
+    font-size: 30px;
+    line-height: 1.2;
+  }
+  .main .card h2,
+  .main .academy-panel-heading h2 {
+    font-size: 22px;
+    line-height: 1.35;
+  }
+  .main .tabs button,
+  .main .content .text-link {
+    font-size: 15px;
+  }
+  .main .profile-details-card,
+  .main .profile-identity-card {
+    padding: 24px 20px;
+  }
+  .main .profile-identity-email {
+    overflow-wrap: anywhere;
+  }
+}
 .main .academy-metric-value,
 .main .academy-metric strong {
   color: #34325e;

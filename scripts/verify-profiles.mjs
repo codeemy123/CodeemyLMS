@@ -9,7 +9,7 @@ import { r2Request } from '../src/lib/server/r2.js';
 config({ path: ['.env.local', '.env'], quiet: true });
 const origin = process.argv.includes('--live')
   ? 'https://lerno.codeemy.in'
-  : 'http://127.0.0.1:3010';
+  : 'http://127.0.0.1:3018';
 const db = getPrisma(),
   fixtures = [];
 const auth = getAuth(
@@ -18,13 +18,29 @@ const auth = getAuth(
     'profile-verification',
   ),
 );
-const png = Buffer.from(
+let png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j9i8AAAAASUVORK5CYII=',
   'base64',
 );
 let browser;
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
+  const canvasPage = await browser.newPage();
+  png = Buffer.from(
+    await canvasPage.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 120;
+      canvas.height = 600;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#6552cc';
+      ctx.fillRect(0, 0, 120, 600);
+      ctx.fillStyle = '#b3dcff';
+      ctx.fillRect(0, 240, 120, 120);
+      return canvas.toDataURL('image/png').split(',')[1];
+    }),
+    'base64',
+  );
+  await canvasPage.close();
   for (const role of ['STUDENT', 'MENTOR', 'ADMIN']) {
     const password = randomBytes(24).toString('base64url');
     const identity = await auth.createUser({
@@ -57,6 +73,10 @@ try {
       .waitFor({ timeout: 45000 });
     await page.getByLabel('Full name', { exact: true }).fill('Updated Profile Test');
     await page.getByLabel('Phone number').fill('9876543210');
+    if (role === 'STUDENT') {
+      await page.getByLabel('College / institution').fill('Persistence Test College');
+      await page.getByLabel('Department', { exact: true }).fill('Computer Science');
+    }
     await page.getByRole('button', { name: 'Save changes', exact: true }).click();
     await page
       .getByRole('status')
@@ -65,18 +85,17 @@ try {
     const saved = await db.users.findUnique({ where: { id: user.id } });
     assert.equal(saved.full_name, 'Updated Profile Test');
     assert.equal(saved.phone, '9876543210');
-    await page
-      .getByLabel('Profile photo', { exact: true })
-      .setInputFiles({ name: 'test-profile.png', mimeType: 'image/png', buffer: png });
     const uploadedResponse = page.waitForResponse(
       (r) => r.url().endsWith('/api/storage/upload') && r.request().method() === 'POST',
     );
-    await page.getByRole('button', { name: 'Upload profile photo', exact: true }).click();
+    await page
+      .getByLabel('Profile photo', { exact: true })
+      .setInputFiles({ name: 'test-profile.png', mimeType: 'image/png', buffer: png });
     const response = await uploadedResponse;
     const file = await response.json();
     if (file.key) fixture.keys.push(file.key);
     assert.equal(response.status(), 201, JSON.stringify(file));
-    await page.getByRole('status').filter({ hasText: 'Profile photo updated.' }).waitFor();
+    await page.getByRole('status').filter({ hasText: 'Profile photo saved.' }).waitFor();
     await page.reload();
     await page.locator('.profile-portrait img').waitFor();
     await page.waitForFunction(
@@ -84,6 +103,28 @@ try {
     );
     const stored = await db.users.findUnique({ where: { id: user.id } });
     assert.ok(stored.profile_image);
+    await page.getByLabel('Full name', { exact: true }).waitFor();
+    assert.equal(
+      await page.getByLabel('Full name', { exact: true }).inputValue(),
+      'Updated Profile Test',
+    );
+    assert.equal(await page.getByLabel('Phone number').inputValue(), '9876543210');
+    if (role === 'STUDENT') {
+      assert.equal(
+        await page.getByLabel('College / institution').inputValue(),
+        'Persistence Test College',
+      );
+      assert.equal(
+        await page.getByLabel('Department', { exact: true }).inputValue(),
+        'Computer Science',
+      );
+    }
+    const portrait = await page.locator('.profile-portrait > img').evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      return { width: rect.width, height: rect.height, fit: getComputedStyle(el).objectFit };
+    });
+    assert.equal(portrait.width, portrait.height, 'Tall images stay square before circular crop');
+    assert.equal(portrait.fit, 'cover');
     assert.equal(
       await page.evaluate(
         () => getComputedStyle(document.querySelector('.content')).backgroundColor,
@@ -95,6 +136,21 @@ try {
       fullPage: true,
     });
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForFunction(
+      () => document.querySelector('.sidebar').getBoundingClientRect().right <= 0,
+    );
+    const avatar = await page.locator('.profile-button img').evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { width: r.width, height: r.height };
+    });
+    assert.equal(avatar.width, avatar.height, 'Header avatar stays square');
+    assert.ok(avatar.height <= 40, 'Header avatar cannot overflow');
+    assert.ok(
+      await page
+        .locator('.sidebar .nav a')
+        .first()
+        .evaluate((el) => parseFloat(getComputedStyle(el).fontSize) >= 16),
+    );
     assert.equal(
       await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
       false,
@@ -106,6 +162,9 @@ try {
     await page.getByRole('button', { name: 'Remove profile photo', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Profile photo removed.' }).waitFor();
     assert.equal((await db.users.findUnique({ where: { id: user.id } })).profile_image, null);
+    await page.reload();
+    await page.getByRole('heading', { name: 'Personal details', exact: true }).waitFor();
+    assert.equal(await page.locator('.profile-portrait img').count(), 0);
     console.log(
       'PASS ' +
         role +
