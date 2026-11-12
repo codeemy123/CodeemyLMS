@@ -1621,29 +1621,58 @@ textarea {
 }
 @media (max-width: 700px) {
   .login-warm .auth-brand {
-    width: 185px;
+    width: 150px;
     padding: 8px 12px;
     border-radius: 12px;
   }
   .login-warm .auth-visual-copy h2 {
-    font-size: 31px;
-    letter-spacing: -1px;
-    margin-top: 12px;
+    font-size: clamp(22px, 6vw, 28px);
+    letter-spacing: -0.6px;
+    margin: 0;
+    line-height: 1.15;
   }
   .login-warm .auth-visual-copy {
-    margin-top: 24px;
+    margin: 14px 0 0;
   }
   .login-warm .auth-visual {
-    padding: 22px 24px;
+    min-height: 0;
+    padding: 18px 20px;
+  }
+  .login-warm .auth-kicker {
+    display: none;
   }
   .login-warm .login-hero-chips {
     display: none;
   }
   .login-warm .auth-form-panel {
-    padding: 28px 24px;
+    padding: 24px 20px calc(96px + env(safe-area-inset-bottom));
+    min-width: 0;
   }
   .login-warm .auth-heading {
     margin-bottom: 22px;
+  }
+  .login-warm .auth-input-wrap input {
+    min-width: 0;
+    font-size: 16px;
+  }
+  .login-warm .auth-google,
+  .login-warm .auth-submit {
+    min-height: 50px;
+    font-size: 15px;
+  }
+  .login-warm .auth-password-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .login-warm .auth-forgot {
+    min-height: 44px;
+    font-size: 13px;
+  }
+  .login-warm .auth-error {
+    overflow-wrap: anywhere;
   }
 }
 /* Unified warm gradient theme across all portal roles. */
@@ -2538,8 +2567,31 @@ select:focus-visible {
     font-size: 12px;
   }
 }
-.workflow-card { padding: clamp(20px, 3vw, 32px); margin-bottom: 20px; }
-.workflow-card video { display: block; width: 100%; max-height: 65vh; background: #201629; border-radius: 16px; margin: 16px 0; }
-.workflow-card fieldset { border: 1px solid #e7d9d2; border-radius: 16px; padding: 20px; margin: 20px 0; }
-.workflow-card fieldset label { display: flex; gap: 12px; padding: 10px 0; }
-.workflow-card blockquote { border-left: 3px solid #dd7752; padding: 12px 20px; margin: 16px 0; }
+.workflow-card {
+  padding: clamp(20px, 3vw, 32px);
+  margin-bottom: 20px;
+}
+.workflow-card video {
+  display: block;
+  width: 100%;
+  max-height: 65vh;
+  background: #201629;
+  border-radius: 16px;
+  margin: 16px 0;
+}
+.workflow-card fieldset {
+  border: 1px solid #e7d9d2;
+  border-radius: 16px;
+  padding: 20px;
+  margin: 20px 0;
+}
+.workflow-card fieldset label {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+}
+.workflow-card blockquote {
+  border-left: 3px solid #dd7752;
+  padding: 12px 20px;
+  margin: 16px 0;
+}
