@@ -1,5 +1,6 @@
 import { ApiError, uuid, roleAllowed, text } from './api.js';
 import { requireCourse } from './data-access.js';
+import { approvedReopen, assessmentAttemptWindow } from './assessment-reopens.js';
 
 export function assessmentDeadline(attempt, assessment) {
   return new Date(
@@ -54,12 +55,13 @@ export function publicQuestions(assessment) {
 export async function finishAttempt(tx, actor, id, body = {}, system = false) {
   const attempt = await tx.assessment_attempts.findUnique({ where: { id: uuid(id) } });
   if (!attempt || attempt.student_id !== actor.id) throw new ApiError(404, 'Attempt not found.');
-  const assessment = system
+  let assessment = system
     ? await tx.assessments.findUnique({
         where: { id: attempt.assessment_id },
         include: { questions: { include: { question_options: true } } },
       })
     : await requireAssessment(tx, actor, attempt.assessment_id);
+  assessment = await assessmentAttemptWindow(tx, attempt, assessment);
   if (attempt.status !== 'IN_PROGRESS')
     return { attempt, deadline: assessmentDeadline(attempt, assessment) };
   const expired = new Date() >= assessmentDeadline(attempt, assessment);
@@ -132,13 +134,41 @@ export async function finishAttempt(tx, actor, id, body = {}, system = false) {
         reference_id: assessment.id,
       },
     });
+    const closedReason = expired ? 'timeout' : body.reason;
+    if (
+      [
+        'hidden',
+        'fullscreen',
+        'focus',
+        'resize',
+        'navigation',
+        'page_exit',
+        'reentry',
+        'timeout',
+      ].includes(closedReason)
+    ) {
+      const admins = await tx.users.findMany({
+        where: { role: 'ADMIN', status: 'ACTIVE' },
+        select: { id: true },
+      });
+      if (admins.length)
+        await tx.notifications.createMany({
+          data: admins.map((a) => ({
+            user_id: a.id,
+            title: 'Assessment attempt closed',
+            message: `${actor.full_name || 'Student'}: ${assessment.title}. Reason: ${closedReason}.`,
+            type: 'ASSESSMENT_REOPEN',
+            reference_id: assessment.id,
+          })),
+        });
+    }
     return { attempt: final, deadline: assessmentDeadline(attempt, assessment) };
   }
   return { attempt, deadline: assessmentDeadline(attempt, assessment) };
 }
 export async function finalizeExpiredAssessments(db) {
   const attempts =
-    await db.$queryRaw`SELECT a.id, a.student_id FROM assessment_attempts a JOIN assessments s ON s.id=a.assessment_id WHERE a.status='IN_PROGRESS' AND (a.started_at + make_interval(mins => s.duration_minutes) <= now() OR s.end_at <= now()) ORDER BY a.started_at LIMIT 500`;
+    await db.$queryRaw`SELECT a.id, a.student_id FROM assessment_attempts a JOIN assessments s ON s.id=a.assessment_id WHERE a.status='IN_PROGRESS' AND (a.started_at + make_interval(mins => s.duration_minutes) <= now() OR COALESCE((SELECT (details->>'closeAt')::timestamptz FROM audit_logs WHERE action='ASSESSMENT_REOPEN_STARTED' AND entity_id=a.id ORDER BY created_at DESC LIMIT 1),s.end_at) <= now()) ORDER BY a.started_at LIMIT 500`;
   let finalized = 0;
   for (const candidate of attempts) {
     await db.$transaction(async (tx) => {
@@ -156,20 +186,26 @@ export async function finalizeExpiredAssessments(db) {
   return finalized;
 }
 
-export async function startAttempt(tx, actor, id) {
+export async function startAttempt(tx, actor, id, options = {}) {
   roleAllowed(actor, ['STUDENT']);
   // Lock the student row so concurrent tabs cannot create two attempts.
   await tx.$queryRaw`SELECT id FROM users WHERE id = ${actor.id}::uuid FOR UPDATE`;
   const assessmentId = uuid(id);
   await tx.$queryRaw`SELECT id FROM assessments WHERE id = ${assessmentId}::uuid FOR UPDATE`;
-  const assessment = await requireAssessment(tx, actor, id);
+  let assessment = await requireAssessment(tx, actor, id);
   const prior = await tx.assessment_attempts.findFirst({
     where: { assessment_id: assessment.id, student_id: actor.id },
     orderBy: { started_at: 'desc' },
   });
-  if (prior) {
+  let reopen;
+  if (prior && (prior.status === 'IN_PROGRESS' || options.reopen !== true)) {
     await tx.$queryRaw`SELECT id FROM assessment_attempts WHERE id = ${prior.id}::uuid FOR UPDATE`;
-    const result = await finishAttempt(tx, actor, prior.id);
+    const result = await finishAttempt(
+      tx,
+      actor,
+      prior.id,
+      prior.status === 'IN_PROGRESS' ? { submit: true, reason: 'reentry' } : {},
+    );
     return {
       ...result,
       questions: publicQuestions(assessment),
@@ -178,6 +214,14 @@ export async function startAttempt(tx, actor, id) {
         select: { question_id: true, answer_text: true, selected_option_ids: true },
       }),
       serverTime: new Date(),
+    };
+  }
+  if (prior) {
+    reopen = await approvedReopen(tx, actor, prior);
+    assessment = {
+      ...assessment,
+      start_at: new Date(reopen.details.openAt),
+      end_at: new Date(reopen.details.closeAt),
     };
   }
   const now = new Date();
@@ -209,8 +253,32 @@ export async function startAttempt(tx, actor, id) {
       throw new ApiError(409, 'Complete the answer options before students can start.');
   }
   const attempt = await tx.assessment_attempts.create({
-    data: { assessment_id: assessment.id, student_id: actor.id },
+    data: { assessment_id: assessment.id, student_id: actor.id, started_at: now, created_at: now },
   });
+  if (reopen) {
+    await tx.audit_logs.create({
+      data: {
+        user_id: actor.id,
+        action: 'ASSESSMENT_REOPEN_USED',
+        entity_type: 'assessment_reopen',
+        entity_id: reopen.id,
+        details: { attemptId: attempt.id },
+      },
+    });
+    await tx.audit_logs.create({
+      data: {
+        user_id: actor.id,
+        action: 'ASSESSMENT_REOPEN_STARTED',
+        entity_type: 'assessment_attempts',
+        entity_id: attempt.id,
+        details: {
+          grantId: reopen.id,
+          openAt: reopen.details.openAt,
+          closeAt: reopen.details.closeAt,
+        },
+      },
+    });
+  }
   return {
     attempt,
     deadline: assessmentDeadline(attempt, assessment),

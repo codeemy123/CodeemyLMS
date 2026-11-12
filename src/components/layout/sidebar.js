@@ -6,8 +6,8 @@ import { LogOut } from 'lucide-react';
 import { navigation } from '@/config/navigation';
 import { workspaceHref } from '@/lib/routes';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
-function NavigationLink({ onNavigate, children, ...props }) {
-  const [prefetch, setPrefetch] = useState(false);
+function NavigationLink({ onNavigate, children, eager = false, ...props }) {
+  const [prefetch, setPrefetch] = useState(eager);
   return (
     <Link
       {...props}
@@ -49,6 +49,7 @@ export default function Sidebar() {
         {navigation[role].map(([n, Icon]) => (
           <NavigationLink
             key={n}
+            eager={['My Courses', 'Courses', 'Assignments'].includes(n)}
             href={workspaceHref(role, n)}
             className={page === n ? 'active' : ''}
             aria-current={page === n ? 'page' : undefined}

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from './api';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
+import { AssessmentAccessRequest } from './assessment-access';
 export default function DatabaseAssessments() {
   const { role } = useWorkspace();
   const [list, setList] = useState([]),
@@ -14,11 +15,19 @@ export default function DatabaseAssessments() {
     answerRef = useRef({}),
     saving = useRef(false);
   const [evaluation, setEvaluation] = useState(null);
+  const [reopenRequests, setReopenRequests] = useState([]);
+  const [locking, setLocking] = useState(false);
+  const lockReason = useRef(null);
   current.current = session;
   answerRef.current = answers;
   async function refresh() {
     try {
-      setList((await api('/api/assessments')).assessments);
+      const [data, access] = await Promise.all([
+        api('/api/assessments'),
+        role === 'Student' ? api('/api/assessment-reopens') : Promise.resolve({ requests: [] }),
+      ]);
+      setList(data.assessments);
+      setReopenRequests(access.requests);
     } catch (e) {
       setMessage(e.message);
     }
@@ -29,6 +38,12 @@ export default function DatabaseAssessments() {
   async function persist(submit = false, reason = 'submitted') {
     const active = current.current;
     if (!active || active.attempt.status !== 'IN_PROGRESS') return;
+    if (submit && !lockReason.current) lockReason.current = reason;
+    if (lockReason.current) {
+      submit = true;
+      reason = lockReason.current;
+      setLocking(true);
+    }
     if (saving.current) {
       if (!submit) return;
       await new Promise((resolve) => {
@@ -55,8 +70,12 @@ export default function DatabaseAssessments() {
         }),
       });
       setSession((s) => (s ? { ...s, ...result } : s));
+      current.current = { ...active, ...result };
       if (result.attempt.status !== 'IN_PROGRESS') {
+        lockReason.current = null;
+        setLocking(false);
         setMessage('Assessment submitted.');
+        if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
         await refresh();
       }
       return result;
@@ -92,8 +111,18 @@ export default function DatabaseAssessments() {
       e.preventDefault();
       e.returnValue = '';
     };
+    const pageExit = () => {
+      if (current.current?.attempt.status === 'IN_PROGRESS')
+        fetch('/api/assessment-attempts/' + current.current.attempt.id, {
+          method: 'PATCH',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ submit: true, reason: 'page_exit' }),
+        }).catch(() => {});
+    };
     const leave = async (e) => {
       e.preventDefault();
+      setMessage('Submitting your assessment before leaving…');
       const result = await persist(true, 'navigation');
       if (result?.attempt.status !== 'IN_PROGRESS' && result?.attempt) e.detail.navigate();
     };
@@ -102,13 +131,15 @@ export default function DatabaseAssessments() {
     const resize = () => {
       if (
         Math.abs(window.innerWidth - size.width) > 150 ||
-        Math.abs(window.innerHeight - size.height) > 150
+        (Math.abs(window.innerHeight - size.height) > 150 &&
+          !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName))
       )
         persist(true, 'resize');
     };
     document.addEventListener('visibilitychange', hidden);
     document.addEventListener('fullscreenchange', fullscreen);
     window.addEventListener('beforeunload', before);
+    window.addEventListener('pagehide', pageExit);
     window.addEventListener('codeemy-assessment-leave', leave);
     window.addEventListener('blur', blur);
     window.addEventListener('resize', resize);
@@ -118,6 +149,7 @@ export default function DatabaseAssessments() {
       document.removeEventListener('visibilitychange', hidden);
       document.removeEventListener('fullscreenchange', fullscreen);
       window.removeEventListener('beforeunload', before);
+      window.removeEventListener('pagehide', pageExit);
       window.removeEventListener('codeemy-assessment-leave', leave);
       window.removeEventListener('blur', blur);
       window.removeEventListener('resize', resize);
@@ -188,13 +220,31 @@ export default function DatabaseAssessments() {
           {session.attempt.status !== 'IN_PROGRESS' ? (
             <>
               <p>Score: {session.attempt.score ?? 'Awaiting evaluation'}</p>
+              <p>This attempt is closed. Another attempt requires Admin approval.</p>
+              <AssessmentAccessRequest
+                attemptId={session.attempt.id}
+                request={reopenRequests.find((r) => r.attemptId === session.attempt.id)}
+                onSaved={refresh}
+              />
               <button onClick={() => setSession(null)}>Back to assessments</button>
             </>
+          ) : locking ? (
+            <div className="assessment-access-box" role="status">
+              <h3>Attempt locked</h3>
+              <p>Saving your answers and closing this attempt. You cannot continue answering.</p>
+              <button
+                className="btn"
+                onClick={() => persist(true, lockReason.current || 'submitted')}
+              >
+                Retry submission
+              </button>
+            </div>
           ) : (
             <>
               <p>
                 Your answers save every 5 seconds. Leaving this tab or fullscreen submits the
-                attempt. Reopening resumes the same server deadline.
+                attempt. Reloading or re-entering closes this one-time attempt. Another attempt
+                requires Admin approval.
               </p>
               {session.questions.map((q, i) => (
                 <fieldset key={q.id}>
@@ -244,84 +294,130 @@ export default function DatabaseAssessments() {
         </>
       ) : (
         <>
-          {list.map((a) => (
-            <article key={a.id} className="workflow-card">
-              <h2>{a.title}</h2>
-              <p>{a.description}</p>
-              <p>
-                {a.batches?.name || 'Course assessment'} · {a.duration_minutes} minutes
-              </p>
-              {role === 'Student' ? (
-                <button
-                  disabled={busy}
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      if (!document.fullscreenElement)
-                        await document.documentElement.requestFullscreen();
-                      const data = await api('/api/assessments/' + a.id + '/attempt', {
-                        method: 'POST',
-                      });
-                      const nextAnswers = Object.fromEntries(
-                        data.answers.map((v) => [
-                          v.question_id,
-                          {
-                            answerText: v.answer_text || '',
-                            selectedOptionIds: v.selected_option_ids,
-                          },
-                        ]),
-                      );
-                      setAnswers(nextAnswers);
-                      setSeconds(
-                        Math.max(
-                          0,
-                          Math.ceil(
-                            (new Date(data.deadline).getTime() -
-                              new Date(data.serverTime).getTime()) /
-                              1000,
-                          ),
-                        ),
-                      );
-                      setSession({
-                        ...data,
-                        clockOffset: new Date(data.serverTime).getTime() - Date.now(),
-                      });
-                    } catch (e) {
-                      setMessage(e.message);
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  {a.assessment_attempts.length ? 'View / resume attempt' : 'Start assessment'}
-                </button>
-              ) : (
-                <div>
-                  <p>{a.assessment_attempts.length} attempts</p>
-                  {a.assessment_attempts
-                    .filter((t) => t.status !== 'IN_PROGRESS')
-                    .map((t) => (
-                      <p key={t.id}>
-                        Score: {t.score ?? 'Pending'} ? {t.status}{' '}
-                        <button
-                          onClick={async () => {
-                            try {
-                              setEvaluation(
-                                await api('/api/assessment-attempts/' + t.id + '/evaluation'),
-                              );
-                            } catch (e) {
-                              setMessage(e.message);
-                            }
-                          }}
-                        >
-                          Evaluate written answers
-                        </button>
-                      </p>
-                    ))}
-                </div>
-              )}
-            </article>
-          ))}
+          {list.map((a) => {
+            const latest = a.assessment_attempts[0];
+            const request = reopenRequests.find((r) => r.attemptId === latest?.id);
+            const retry = request?.status === 'APPROVED' && !request.used;
+            const outside = retry
+              ? new Date() < new Date(request.openAt) || new Date() >= new Date(request.closeAt)
+              : (a.start_at && new Date() < new Date(a.start_at)) ||
+                (a.end_at && new Date() >= new Date(a.end_at));
+            return (
+              <article key={a.id} className="workflow-card">
+                <h2>{a.title}</h2>
+                <p>{a.description}</p>
+                <p>
+                  {a.batches?.name || 'Course assessment'} · {a.duration_minutes} minutes
+                </p>
+                <p>
+                  Available:{' '}
+                  {a.start_at
+                    ? new Date(a.start_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+                    : 'When published'}{' '}
+                  →{' '}
+                  {a.end_at
+                    ? new Date(a.end_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+                    : 'No closing date'}{' '}
+                  (IST)
+                </p>
+                {retry && (
+                  <p>
+                    Admin-approved window: {new Date(request.openAt).toLocaleString()} →{' '}
+                    {new Date(request.closeAt).toLocaleString()}
+                  </p>
+                )}
+                {role === 'Student' ? (
+                  <>
+                    <button
+                      disabled={busy || ((!latest || retry) && outside)}
+                      onClick={async () => {
+                        setBusy(true);
+                        try {
+                          if ((!latest || retry) && !document.fullscreenElement)
+                            await document.documentElement.requestFullscreen();
+                          const data = await api('/api/assessments/' + a.id + '/attempt', {
+                            method: 'POST',
+                            body: JSON.stringify({ reopen: Boolean(retry) }),
+                          });
+                          const nextAnswers = Object.fromEntries(
+                            data.answers.map((v) => [
+                              v.question_id,
+                              {
+                                answerText: v.answer_text || '',
+                                selectedOptionIds: v.selected_option_ids,
+                              },
+                            ]),
+                          );
+                          setAnswers(nextAnswers);
+                          setSeconds(
+                            Math.max(
+                              0,
+                              Math.ceil(
+                                (new Date(data.deadline).getTime() -
+                                  new Date(data.serverTime).getTime()) /
+                                  1000,
+                              ),
+                            ),
+                          );
+                          lockReason.current = null;
+                          setLocking(false);
+                          setSession({
+                            ...data,
+                            clockOffset: new Date(data.serverTime).getTime() - Date.now(),
+                          });
+                        } catch (e) {
+                          setMessage(e.message);
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      {retry
+                        ? 'Start approved attempt'
+                        : latest
+                          ? latest.status === 'IN_PROGRESS'
+                            ? 'Close interrupted attempt'
+                            : 'View result'
+                          : outside
+                            ? 'Outside access window'
+                            : 'Start assessment'}
+                    </button>
+                    {latest && latest.status !== 'IN_PROGRESS' && (
+                      <AssessmentAccessRequest
+                        attemptId={latest.id}
+                        request={request}
+                        onSaved={refresh}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <div>
+                    <p>{a.assessment_attempts.length} attempts</p>
+                    {a.assessment_attempts
+                      .filter((t) => t.status !== 'IN_PROGRESS')
+                      .map((t) => (
+                        <p key={t.id}>
+                          Score: {t.score ?? 'Pending'} ? {t.status}{' '}
+                          <button
+                            onClick={async () => {
+                              try {
+                                setEvaluation(
+                                  await api('/api/assessment-attempts/' + t.id + '/evaluation'),
+                                );
+                              } catch (e) {
+                                setMessage(e.message);
+                              }
+                            }}
+                          >
+                            Evaluate written answers
+                          </button>
+                        </p>
+                      ))}
+                  </div>
+                )}
+              </article>
+            );
+          })}
           {!list.length && <p>No assigned assessments yet.</p>}
         </>
       )}

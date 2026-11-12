@@ -27,6 +27,8 @@ export const GET = authenticated(async (_request, _context, actor, db) => {
               ? { users: { batch_members: { some: { batches: { mentor_id: actor.id } } } } }
               : {},
         select: { id: true, student_id: true, score: true, status: true, submitted_at: true },
+        orderBy: [{ started_at: 'desc' }, { created_at: 'desc' }],
+        ...(actor.role === 'STUDENT' ? { take: 1 } : {}),
       },
     },
     orderBy: { created_at: 'desc' },
