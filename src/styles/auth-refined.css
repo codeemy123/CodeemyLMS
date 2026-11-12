@@ -1,0 +1,237 @@
+/* Authentication-only layout: Roman typography with a blue/violet brand panel. */
+.login-refined h1,
+.login-refined h2,
+.registration-shell h1,
+.registration-shell h2 {
+  font-family: inherit;
+}
+.registration-shell {
+  background:
+    radial-gradient(ellipse at 0 0, #ccefff, transparent 58%),
+    radial-gradient(ellipse at 100% 100%, #ded7ff, transparent 60%), #f3f5ff;
+}
+.registration-shell .registration-card {
+  border-color: #e2dff2;
+  box-shadow: 0 20px 70px #322b6d12;
+}
+.registration-shell .registration-form > .btn {
+  background: linear-gradient(110deg, #5141d5, #823bd3);
+  color: white;
+}
+.registration-shell .registration-role-picker .selected {
+  border-color: #9985dd;
+  background: #f3efff;
+  color: #5140a1;
+}
+.registration-shell .registration-signin a,
+.registration-shell .registration-switch-account {
+  color: #5140a1;
+}
+.registration-shell .registration-form input:focus,
+.registration-shell .registration-form textarea:focus {
+  border-color: #6952d7;
+  outline-color: #6952d725;
+}
+.login-refined {
+  position: relative;
+  inset: auto;
+  min-height: 100svh;
+  overflow: visible;
+  padding: clamp(20px, 4vw, 56px);
+  align-content: center;
+  justify-items: center;
+  background:
+    radial-gradient(ellipse at 0 0, #ccefff, transparent 58%),
+    radial-gradient(ellipse at 100% 100%, #ded7ff, transparent 60%), #f3f5ff;
+}
+.login-refined .auth-card {
+  max-width: 1120px;
+  height: auto;
+  min-height: 680px;
+  grid-template-rows: auto;
+  border: 1px solid #e4e5f4;
+  border-radius: 28px;
+  box-shadow: 0 24px 80px #322b6d18;
+}
+.login-refined .auth-visual {
+  background:
+    radial-gradient(ellipse at 0 0, #38b9f3aa, transparent 60%),
+    linear-gradient(145deg, #4438d4, #7537d4 58%, #4432bc);
+  padding: 44px;
+}
+.login-refined .auth-brand {
+  width: 230px;
+  max-width: 100%;
+  border-radius: 16px;
+  margin: 0;
+}
+.login-refined .auth-visual-copy h2 {
+  font-size: clamp(38px, 4vw, 54px);
+  letter-spacing: -1.3px;
+}
+.login-refined .auth-visual-copy p {
+  color: #fff;
+  font-size: 17px;
+}
+.login-refined .login-highlight {
+  color: #ffe0a3;
+}
+.login-refined .auth-form-panel {
+  width: 100%;
+  max-width: 560px;
+  padding: 44px 48px;
+  overflow: visible;
+  background: #fff;
+}
+.login-refined .auth-heading h1 {
+  color: #26243e;
+  font-size: 38px;
+  letter-spacing: -1px;
+}
+.login-refined .auth-heading p {
+  color: #555369;
+}
+.login-refined .registration-link a {
+  color: #5140b8;
+}
+.login-refined .auth-field {
+  color: #333047;
+  font-size: 16px;
+}
+.login-refined .auth-form {
+  gap: 18px;
+}
+.login-refined .auth-input-wrap {
+  min-height: 52px;
+  border: 1px solid #c9c9dc;
+  border-radius: 12px;
+  background: #fcfcff;
+}
+.login-refined .auth-input-wrap input {
+  color: #29273e;
+  font-size: 17px;
+  font-weight: 400;
+}
+.login-refined .auth-input-wrap input::placeholder {
+  color: #737184;
+}
+.login-refined .auth-input-wrap > svg,
+.login-refined .auth-password-toggle {
+  color: #6d668c;
+}
+.login-refined .auth-input-wrap:focus-within {
+  border-color: #6952d7;
+  box-shadow: 0 0 0 4px #6952d715;
+}
+.login-refined .auth-submit {
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 18px;
+  background: linear-gradient(110deg, #5141d5, #823bd3);
+  box-shadow: 0 8px 20px #6651cc26;
+}
+.login-refined .auth-divider {
+  color: #656174;
+  margin: 22px 0;
+}
+.login-refined .auth-divider::before,
+.login-refined .auth-divider::after {
+  background: #e2e0ee;
+}
+.login-refined .auth-google {
+  min-height: 52px;
+  border: 1px solid #d4d0e5;
+  border-radius: 12px;
+  font-size: 17px;
+  color: #333047;
+  background: #fff;
+}
+.login-refined .auth-google:hover {
+  background: #f5f2ff;
+  border-color: #8a78cd;
+}
+.login-refined .auth-disclaimer {
+  color: #686377;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 20px;
+}
+.auth-header-wave {
+  display: none;
+}
+@media (max-width: 760px) {
+  .login-refined {
+    padding: 20px 14px max(24px, env(safe-area-inset-bottom));
+  }
+  .login-refined .auth-card {
+    max-width: 440px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-radius: 24px;
+  }
+  .login-refined .auth-visual {
+    min-height: 0;
+    padding: 25px 26px 40px;
+    align-items: center;
+  }
+  .login-refined .auth-brand {
+    width: 175px;
+    padding: 9px 12px;
+    border-radius: 13px;
+  }
+  .login-refined .auth-visual-copy {
+    margin: 17px 0 0;
+    padding: 0;
+    text-align: center;
+  }
+  .login-refined .auth-visual-copy h2 {
+    font-size: 27px;
+    line-height: 1.13;
+    letter-spacing: -0.5px;
+    margin: 0;
+  }
+  .login-refined .auth-visual-copy p,
+  .login-refined .auth-kicker,
+  .login-refined .login-hero-chips {
+    display: none;
+  }
+  .login-refined .auth-header-wave {
+    display: block;
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    z-index: 2;
+  }
+  .login-refined .auth-form-panel {
+    padding: 16px 24px 26px;
+  }
+  .login-refined .auth-heading {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .login-refined .auth-heading h1 {
+    font-size: 31px;
+    margin-bottom: 8px;
+  }
+  .login-refined .auth-heading p {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .login-refined .registration-link {
+    font-size: 15px !important;
+  }
+  .login-refined .auth-disclaimer {
+    font-size: 13px;
+  }
+}
+@media (max-width: 359px) {
+  .login-refined {
+    padding: 12px 8px;
+  }
+  .login-refined .auth-form-panel {
+    padding: 14px 18px 24px;
+  }
+}

@@ -33,7 +33,7 @@ export default function Login() {
       />
     );
   return (
-    <section className="auth-shell login-warm">
+    <section className="auth-shell login-warm login-refined">
       <div className="auth-card">
         <div className="auth-visual">
           <a className="auth-brand" href="/">
@@ -58,6 +58,14 @@ export default function Login() {
               </span>
             </div>
           </div>
+          <svg
+            className="auth-header-wave"
+            viewBox="0 0 400 50"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path d="M0 25C100-20 230 85 400 20V50H0Z" fill="white" />
+          </svg>
         </div>
         <div className="auth-form-panel">
           <div className="auth-heading">
