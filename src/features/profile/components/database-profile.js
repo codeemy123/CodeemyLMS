@@ -1,19 +1,41 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Camera, Upload, Trash2, UserRound, ShieldCheck, Mail, CheckCircle2 } from 'lucide-react';
 import { uploadFile } from '@/lib/uploads';
+
 export default function DatabaseProfile() {
-  const [user, setUser] = useState(null),
-    [message, setMessage] = useState(''),
-    [busy, setBusy] = useState(false);
+  const [user, setUser] = useState(null);
+  const [capabilities, setCapabilities] = useState({});
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState('');
+  const photoInput = useRef(null);
+  async function load() {
+    setError('');
+    try {
+      const response = await fetch('/api/profile', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to load your profile.');
+      setUser(data.user);
+      setCapabilities(data.capabilities || {});
+    } catch (e) {
+      setError(e.message);
+    }
+  }
   useEffect(() => {
-    fetch('/api/profile', { cache: 'no-store' })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error);
-        setUser(data.user);
-      })
-      .catch((e) => setMessage(e.message));
+    load();
   }, []);
+  useEffect(() => {
+    if (!file) {
+      setPreview('');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
   async function save(data) {
     const response = await fetch('/api/profile', {
       method: 'PATCH',
@@ -21,120 +43,228 @@ export default function DatabaseProfile() {
       body: JSON.stringify(data),
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
+    if (!response.ok) throw new Error(result.error || 'Unable to save your profile.');
     setUser(result.user);
+    setCapabilities(result.capabilities || {});
     window.dispatchEvent(new Event('codeemy-profile-updated'));
-    setMessage('Profile saved.');
   }
-  if (!user) return <p role="status">{message || 'Loading your profile?'}</p>;
-  return (
-    <section className="card" style={{ padding: 28 }}>
-      <h2>{user.full_name}</h2>
-      <p>
-        {user.email} ? {user.role}
-      </p>
-      <form
-        className="profile-photo-editor"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          const file = new FormData(event.currentTarget).get('photo');
-          if (
-            !file?.size ||
-            !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type) ||
-            file.size > 5242880
-          ) {
-            setMessage('Choose a PNG, JPG, WebP or GIF up to 5 MB.');
-            return;
-          }
-          setBusy(true);
-          try {
-            const uploaded = await uploadFile(file);
-            await save({ photo: uploaded.data });
-          } catch (e) {
-            setMessage(e.message);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <div className="avatar profile-photo-large">
-          {user.profile_image ? (
-            <img className="profile-avatar-image" alt="Your profile" src={user.profile_image} />
-          ) : (
-            user.full_name
-              .split(' ')
-              .map((n) => n[0])
-              .slice(0, 2)
-              .join('')
-          )}
-        </div>
-        <div>
-          <h3>Profile picture</h3>
-          <input
-            type="file"
-            name="photo"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            required
-          />
-          <button disabled={busy} type="submit">
-            Upload profile photo
+  async function perform(action, success) {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await action();
+      setMessage(success);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (!user)
+    return (
+      <section className="profile-loading card">
+        <UserRound size={28} />
+        <h2>Your personal space</h2>
+        <p role={error ? 'alert' : 'status'}>{error || 'Loading your profile…'}</p>
+        {error && (
+          <button className="btn" onClick={load}>
+            Try again
           </button>
-          {user.profile_image && (
-            <button
-              type="button"
+        )}
+      </section>
+    );
+  const initials = user.full_name
+    .split(' ')
+    .filter(Boolean)
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('');
+  const roleName = user.role.charAt(0) + user.role.slice(1).toLowerCase();
+  return (
+    <div className="personal-profile">
+      <aside className="profile-identity-card">
+        <span className="profile-section-label">YOUR CODEEMY IDENTITY</span>
+        <div className="profile-portrait">
+          {preview || user.profile_image ? (
+            <img src={preview || user.profile_image} alt={`${user.full_name}'s profile`} />
+          ) : (
+            <span>{initials}</span>
+          )}
+          <span className="profile-camera-mark">
+            <Camera size={17} />
+          </span>
+        </div>
+        <h2>{user.full_name}</h2>
+        <span className="profile-role-pill">{roleName}</span>
+        <p className="profile-identity-email">
+          <Mail size={15} />
+          {user.email}
+        </p>
+        <div className="profile-status">
+          <ShieldCheck size={16} />
+          {user.status === 'ACTIVE' ? 'Active academy account' : user.status}
+        </div>
+        <div className="profile-photo-controls-new">
+          <label className="profile-choose-photo">
+            <Camera size={17} />
+            Choose a photo
+            <input
+              ref={photoInput}
+              aria-label="Profile photo"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
               disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await save({ photo: null });
-                } catch (e) {
-                  setMessage(e.message);
-                } finally {
-                  setBusy(false);
+              onChange={(e) => {
+                const selected = e.target.files?.[0];
+                setError('');
+                setMessage('');
+                if (!selected) return;
+                if (
+                  !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(selected.type) ||
+                  selected.size > 5242880
+                ) {
+                  setError('Choose a PNG, JPG, WebP or GIF up to 5 MB.');
+                  e.target.value = '';
+                  return;
                 }
+                setFile(selected);
               }}
+            />
+          </label>
+          <small>{file ? file.name : 'PNG, JPG, WebP or GIF · Maximum 5 MB'}</small>
+          {file && (
+            <button
+              className="btn"
+              disabled={busy}
+              onClick={() =>
+                perform(async () => {
+                  const uploaded = await uploadFile(file);
+                  await save({ photo: uploaded.data });
+                  setFile(null);
+                  if (photoInput.current) photoInput.current.value = '';
+                }, 'Profile photo updated.')
+              }
             >
+              <Upload size={16} />
+              {busy ? 'Saving…' : 'Upload profile photo'}
+            </button>
+          )}
+          {(user.profile_image || file) && (
+            <button
+              className="profile-remove-photo"
+              disabled={busy}
+              onClick={() =>
+                perform(async () => {
+                  if (user.profile_image) await save({ photo: null });
+                  setFile(null);
+                  if (photoInput.current) photoInput.current.value = '';
+                }, 'Profile photo removed.')
+              }
+            >
+              <Trash2 size={15} />
               Remove profile photo
             </button>
           )}
         </div>
-      </form>
-      <form
-        className="auth-form"
-        key={user.id + user.full_name + user.phone}
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          try {
-            await save(Object.fromEntries(new FormData(e.currentTarget)));
-          } catch (error) {
-            setMessage(error.message);
-          } finally {
-            setBusy(false);
+      </aside>
+      <section className="profile-details-card">
+        <div className="profile-details-heading">
+          <span className="profile-heading-icon">
+            <UserRound size={24} />
+          </span>
+          <div>
+            <h2>Personal details</h2>
+            <p>A few details that make this workspace yours.</p>
+          </div>
+        </div>
+        <form
+          key={
+            user.id +
+            user.full_name +
+            (user.phone || '') +
+            (user.student_profiles?.college_name || '')
           }
-        }}
-      >
-        <label>
-          Full name
-          <input name="fullName" defaultValue={user.full_name} required maxLength={150} />
-        </label>
-        <label>
-          Phone
-          <input name="phone" defaultValue={user.phone || ''} maxLength={20} />
-        </label>
-        {user.role === 'STUDENT' && (
-          <label>
-            College name
-            <input
-              name="collegeName"
-              defaultValue={user.student_profiles?.college_name || ''}
-              maxLength={255}
-            />
-          </label>
-        )}
-        <button disabled={busy}>Save changes</button>
-      </form>
-      {message && <p role="status">{message}</p>}
-    </section>
+          onSubmit={(e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.currentTarget));
+            perform(() => save(data), 'Your personal details have been saved.');
+          }}
+        >
+          <div className="profile-details-grid">
+            <label>
+              Full name
+              <input
+                name="fullName"
+                defaultValue={user.full_name}
+                autoComplete="name"
+                required
+                maxLength={150}
+                disabled={busy}
+              />
+            </label>
+            <label>
+              Email address
+              <input value={user.email} type="email" readOnly />
+              <small>Your academy sign-in email.</small>
+            </label>
+            <label>
+              Phone number
+              <input
+                name="phone"
+                defaultValue={user.phone || ''}
+                type="tel"
+                autoComplete="tel"
+                maxLength={20}
+                placeholder="Add your phone number"
+                disabled={busy}
+              />
+            </label>
+            <label>
+              Workspace role
+              <input value={roleName} readOnly />
+            </label>
+            {user.role === 'STUDENT' && capabilities.collegeName && (
+              <label className="profile-wide">
+                College / institution
+                <input
+                  name="collegeName"
+                  defaultValue={user.student_profiles?.college_name || ''}
+                  maxLength={255}
+                  placeholder="Your college or institution"
+                  disabled={busy}
+                />
+              </label>
+            )}
+            {user.role === 'MENTOR' && (
+              <label className="profile-wide">
+                Qualification / expertise
+                <input value={user.mentor_profiles?.qualification || 'Not provided'} readOnly />
+              </label>
+            )}
+          </div>
+          <div className="profile-save-row">
+            <p>
+              <ShieldCheck size={16} />
+              Your account role is managed by your academy.
+            </p>
+            <button className="btn" disabled={busy} type="submit">
+              {busy ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </form>
+      </section>
+      {message && (
+        <p className="profile-feedback success" role="status">
+          <CheckCircle2 size={18} />
+          {message}
+        </p>
+      )}
+      {error && (
+        <p className="profile-feedback error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

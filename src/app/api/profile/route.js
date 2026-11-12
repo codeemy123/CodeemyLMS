@@ -1,28 +1,22 @@
 import { authenticated } from '@/lib/server/auth';
 import { jsonBody, text, ApiError } from '@/lib/server/api';
 import { authorizeObject } from '@/lib/server/storage-access';
+import { profileDetails } from '@/lib/server/profile';
 export const runtime = 'nodejs';
-export const GET = authenticated(async (_request, _context, actor, db) => ({
-  user: await db.users.findUnique({
-    where: { id: actor.id },
-    select: {
-      id: true,
-      full_name: true,
-      email: true,
-      phone: true,
-      role: true,
-      status: true,
-      profile_image: true,
-      student_profiles: true,
-      mentor_profiles: true,
-    },
-  }),
-}));
+export const GET = authenticated(async (_request, _context, actor, db) =>
+  profileDetails(db, actor),
+);
 export const PATCH = authenticated(async (request, _context, actor, db) => {
   const body = await jsonBody(request);
   const data = { updated_at: new Date() };
   if (body.collegeName !== undefined) {
     if (actor.role !== 'STUDENT') throw new ApiError(403, 'College details are for students.');
+    const profile = await profileDetails(db, actor);
+    if (!profile.capabilities.collegeName)
+      throw new ApiError(
+        503,
+        'College details are temporarily unavailable. You can still save your name, phone and photo.',
+      );
     data.student_profiles = {
       upsert: {
         create: { college_name: text(body.collegeName, 255, false) || null },
@@ -55,19 +49,10 @@ export const PATCH = authenticated(async (request, _context, actor, db) => {
       data.profile_image = photo;
     }
   }
-  const user = await db.users.update({
+  await db.users.update({
     where: { id: actor.id },
     data,
-    select: {
-      id: true,
-      full_name: true,
-      email: true,
-      phone: true,
-      role: true,
-      status: true,
-      profile_image: true,
-      student_profiles: true,
-    },
+    select: { id: true },
   });
-  return { user };
+  return profileDetails(db, actor);
 });
