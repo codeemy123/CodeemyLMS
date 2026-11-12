@@ -8,7 +8,7 @@ export function csvDocument(headers, rows) {
 }
 
 // A self-contained PDF for the frontend certificate preview; no external service.
-export function certificatePdf({ name, course, number, date, status = 'Issued' }) {
+export function certificatePdf({ name, course, number, date, status = 'Issued', production = false }) {
   const safe = (value) =>
     String(value)
       .replace(/[^\x20-\x7e]/g, '')
@@ -22,7 +22,7 @@ export function certificatePdf({ name, course, number, date, status = 'Issued' }
     [20, 160, 230, course],
     [11, 190, 170, `Certificate: ${number}`],
     [11, 190, 150, `Issued: ${date} | Status: ${status}`],
-    [10, 190, 100, 'Frontend preview - not an accredited credential'],
+    [10, 190, 100, production ? 'Issued by CodeEmy Edutech' : 'Frontend preview - not an accredited credential'],
   ];
   const stream =
     '0.16 0.37 0.27 RG 3 w 35 35 772 525 re S\n' +

@@ -1,4 +1,4 @@
-import { registrationLoginMessage } from '@/lib/server/registrations';
+import { resolveSessionAccount } from '@/lib/server/session-account';
 import { NextResponse } from 'next/server';
 import { firebaseAuth } from '@/lib/server/firebase';
 import { sessionCookie } from '@/lib/server/auth';
@@ -21,21 +21,21 @@ export async function POST(request) {
     if (Date.now() / 1000 - token.auth_time > 300)
       throw new ApiError(401, 'Sign in again to create a session.');
     const db = getPrisma();
-    const actor = await db.users.findUnique({
-      where: { firebase_uid: token.uid },
-      select: { id: true, role: true, status: true },
-    });
-    if (!actor)
-      throw new ApiError(
-        403,
-        'Register your account first so your academy can review your access.',
-      );
-    if (actor.status !== 'ACTIVE')
-      throw new ApiError(403, await registrationLoginMessage(db, actor.id));
+    const account = await resolveSessionAccount(db, token);
+    if (account.needsRegistration) {
+      const response = NextResponse.json(account, { headers: { 'Cache-Control': 'no-store' } });
+      response.cookies.set(sessionCookie, '', {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 0,
+      });
+      return response;
+    }
     const value = await auth.createSessionCookie(body.idToken, {
       expiresIn: 5 * 24 * 60 * 60 * 1000,
     });
-    const response = NextResponse.json({ role: actor.role });
+    const response = NextResponse.json({ role: account.role });
     response.cookies.set(sessionCookie, value, {
       httpOnly: true,
       secure:

@@ -1,12 +1,33 @@
 import { ApiError, choice, text, uuid } from './api.js';
 
 export const registrationActions = ['REGISTRATION_APPROVED', 'REGISTRATION_REJECTED'];
+export function requireRegistrationPassword(identity, account) {
+  if (
+    account.uid !== identity.uid ||
+    account.disabled ||
+    !identity.email ||
+    account.email?.toLowerCase() !== identity.email.toLowerCase()
+  )
+    throw new ApiError(409, 'Your identity changed. Please sign in again.');
+  if (!account.providerData.some((p) => p.providerId === 'password'))
+    throw new ApiError(
+      400,
+      'Create an email/password sign-in before submitting your registration.',
+    );
+}
 
 export async function submitRegistration(db, identity, body) {
   if (!identity.email) throw new ApiError(400, 'An email address is required.');
   const role = choice(body.role, ['STUDENT', 'MENTOR']);
   const fullName = text(body.fullName, 150);
-  const phone = text(body.phone || '', 20, false);
+  const phone = text(body.phone || '', 20);
+  if (
+    !/^\+?[0-9][0-9 ()-]{5,19}$/.test(phone) ||
+    phone.replace(/\D/g, '').length < 7 ||
+    phone.replace(/\D/g, '').length > 15
+  )
+    throw new ApiError(400, 'Enter a valid phone number.');
+  if (role === 'MENTOR') text(body.qualification || '', 500);
   const details = {
     role,
     phone,
@@ -14,6 +35,7 @@ export async function submitRegistration(db, identity, body) {
     qualification: text(body.qualification || '', 500, false),
     message: text(body.message || '', 2000, false),
     emailVerified: identity.email_verified === true,
+    passwordReady: body.passwordReady === true,
   };
   return db.$transaction(async (tx) => {
     const existing = await tx.users.findFirst({

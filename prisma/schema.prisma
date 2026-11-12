@@ -189,17 +189,45 @@ model certificates {
 }
 
 model class_sessions {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  batch_id    String       @db.Uuid
-  mentor_id   String?      @db.Uuid
-  title       String       @db.VarChar(255)
+  zoom_links  zoom_class_links[]
+  id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batch_id    String             @db.Uuid
+  mentor_id   String?            @db.Uuid
+  title       String             @db.VarChar(255)
   meeting_url String?
-  start_at    DateTime     @db.Timestamptz(6)
-  end_at      DateTime?    @db.Timestamptz(6)
-  created_at  DateTime?    @default(now()) @db.Timestamptz(6)
+  start_at    DateTime           @db.Timestamptz(6)
+  end_at      DateTime?          @db.Timestamptz(6)
+  created_at  DateTime?          @default(now()) @db.Timestamptz(6)
   attendance  attendance[]
-  batches     batches      @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users       users?       @relation(fields: [mentor_id], references: [id], onUpdate: NoAction)
+  batches     batches            @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users?             @relation(fields: [mentor_id], references: [id], onUpdate: NoAction)
+}
+
+model zoom_class_links {
+  meeting_uuid   String            @id @db.VarChar(255)
+  class_id       String            @db.Uuid
+  created_at     DateTime          @default(now()) @db.Timestamptz(6)
+  class_sessions class_sessions    @relation(fields: [class_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  recordings     zoom_recordings[]
+
+  @@index([class_id], map: "zoom_class_links_class_idx")
+}
+
+model zoom_recordings {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meeting_uuid     String           @db.VarChar(255)
+  file_id          String           @unique @db.VarChar(255)
+  status           String           @default("WAITING_PUBLISH") @db.VarChar(30)
+  object_key       String?
+  size_bytes       BigInt?
+  attempts         Int              @default(0)
+  lease_until      DateTime?        @db.Timestamptz(6)
+  last_error       String?
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime         @default(now()) @db.Timestamptz(6)
+  zoom_class_links zoom_class_links @relation(fields: [meeting_uuid], references: [meeting_uuid], onDelete: Restrict, onUpdate: NoAction)
+
+  @@index([status, created_at], map: "zoom_recordings_queue_idx")
 }
 
 model course_modules {
@@ -382,16 +410,17 @@ model questions {
 }
 
 model resources {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  course_id     String?   @db.Uuid
-  title         String    @db.VarChar(255)
-  description   String?
-  file_url      String
-  resource_type String?   @db.VarChar(50)
-  uploaded_by   String?   @db.Uuid
-  created_at    DateTime? @default(now()) @db.Timestamptz(6)
-  courses       courses?  @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users         users?    @relation(fields: [uploaded_by], references: [id], onUpdate: NoAction)
+  career_applications career_applications[]
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  course_id           String?               @db.Uuid
+  title               String                @db.VarChar(255)
+  description         String?
+  file_url            String
+  resource_type       String?               @db.VarChar(50)
+  uploaded_by         String?               @db.Uuid
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  courses             courses?              @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users               users?                @relation(fields: [uploaded_by], references: [id], onUpdate: NoAction)
 }
 
 model student_profiles {
@@ -399,11 +428,28 @@ model student_profiles {
   user_id             String    @unique @db.Uuid
   registration_number String?   @unique @db.VarChar(100)
   qualification       String?
+  college_name        String?   @db.VarChar(255)
   department          String?   @db.VarChar(150)
   admission_date      DateTime? @db.Date
   created_at          DateTime? @default(now()) @db.Timestamptz(6)
   updated_at          DateTime? @default(now()) @db.Timestamptz(6)
   users               users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model career_applications {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  resource_id String    @db.Uuid
+  student_id  String    @db.Uuid
+  status      String    @default("APPLIED") @db.VarChar(30)
+  cover_note  String?
+  feedback    String?
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @default(now()) @db.Timestamptz(6)
+  resources   resources @relation(fields: [resource_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  users       users     @relation(fields: [student_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@unique([resource_id, student_id])
+  @@index([student_id], map: "career_applications_student_idx")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -423,6 +469,7 @@ model student_queries {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
+  career_applications                                               career_applications[]
   id                                                                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   firebase_uid                                                      String                   @unique @db.VarChar(255)
   email                                                             String                   @unique @db.VarChar(255)

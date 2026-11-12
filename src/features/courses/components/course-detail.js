@@ -107,7 +107,7 @@ export default function CourseDetail() {
             Next lesson
           </Button>
         </div>
-        {role !== 'Student' && (
+        {role === 'Admin' && (
           <div className="form-actions">
             <Button onClick={() => setModal('Edit course')}>Edit course</Button>
             <Button secondary onClick={() => setModal('Add lesson')}>

@@ -122,6 +122,16 @@ export default function DatabaseProfile() {
           Phone
           <input name="phone" defaultValue={user.phone || ''} maxLength={20} />
         </label>
+        {user.role === 'STUDENT' && (
+          <label>
+            College name
+            <input
+              name="collegeName"
+              defaultValue={user.student_profiles?.college_name || ''}
+              maxLength={255}
+            />
+          </label>
+        )}
         <button disabled={busy}>Save changes</button>
       </form>
       {message && <p role="status">{message}</p>}

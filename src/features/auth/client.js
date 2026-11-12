@@ -10,6 +10,8 @@ import {
   GoogleAuthProvider,
   signOut,
   sendPasswordResetEmail,
+  EmailAuthProvider,
+  linkWithCredential,
 } from 'firebase/auth';
 let pending;
 export function clientAuth() {
@@ -30,13 +32,13 @@ export function clientAuth() {
   }));
 }
 export async function login(email, password, google = false) {
+  if (google) {
+    const result = await googleAccess();
+    return result;
+  }
   const auth = await clientAuth();
   try {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    const credential = google
-      ? await signInWithPopup(auth, provider)
-      : await signInWithEmailAndPassword(auth, email, password);
+    const credential = await signInWithEmailAndPassword(auth, email, password);
     const response = await fetch('/api/auth/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -50,6 +52,34 @@ export async function login(email, password, google = false) {
   } finally {
     await signOut(auth);
   }
+}
+export async function googleAccess() {
+  const auth = await clientAuth();
+  let completingRegistration = false;
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const credential = await signInWithPopup(auth, provider);
+    const response = await fetch('/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: await credential.user.getIdToken() }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Unable to sign in.');
+    if (data.needsRegistration === true) {
+      completingRegistration = true;
+      return { needsRegistration: true, profile: data.profile };
+    }
+    if (!['ADMIN', 'MENTOR', 'STUDENT'].includes(data.role))
+      throw new Error('Account role is invalid.');
+    return '/' + data.role.toLowerCase() + '/dashboard';
+  } finally {
+    if (!completingRegistration) await signOut(auth);
+  }
+}
+export async function cancelGoogleRegistration() {
+  await signOut(await clientAuth());
 }
 export async function logout() {
   const response = await fetch('/api/auth/session', { method: 'DELETE' });
@@ -75,13 +105,33 @@ export function authMessage(error) {
 }
 
 export async function registerAccount(details, google = false) {
+  if (typeof details.password !== 'string' || details.password.length < 12)
+    throw new Error('Create a password with at least 12 characters.');
+  if (details.password !== details.confirmPassword) throw new Error('Passwords do not match.');
   const auth = await clientAuth();
   try {
     let credential;
     if (google) {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      credential = await signInWithPopup(auth, provider);
+      credential = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com')
+        ? { user: auth.currentUser }
+        : await signInWithPopup(auth, provider);
+      const user = credential.user;
+      if (!user.email || user.email.toLowerCase() !== details.email?.trim().toLowerCase())
+        throw new Error(
+          'Your Google account changed. Select the same account or start registration again.',
+        );
+      if (user.providerData.some((p) => p.providerId === 'password')) {
+        credential = await signInWithEmailAndPassword(auth, user.email, details.password);
+        if (credential.user.uid !== user.uid)
+          throw new Error('Sign in to your existing account before registering.');
+      } else {
+        credential = await linkWithCredential(
+          user,
+          EmailAuthProvider.credential(user.email, details.password),
+        );
+      }
     } else {
       try {
         credential = await createUserWithEmailAndPassword(auth, details.email, details.password);
@@ -94,7 +144,7 @@ export async function registerAccount(details, google = false) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        idToken: await credential.user.getIdToken(),
+        idToken: await credential.user.getIdToken(true),
         fullName: details.fullName,
         role: details.role,
         phone: details.phone,

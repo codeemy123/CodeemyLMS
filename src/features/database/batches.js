@@ -1,4 +1,6 @@
 'use client';
+import AdminRecordActions from '@/features/management/components/admin-record-editor';
+
 import { useEffect, useState } from 'react';
 import { api } from './api';
 export default function DatabaseBatches() {
@@ -99,8 +101,9 @@ export default function DatabaseBatches() {
       {batches.map((batch) => (
         <section className="card" style={{ padding: 24 }} key={batch.id}>
           <h2>{batch.name}</h2>
+          <AdminRecordActions entity="batches" record={batch} onSaved={refresh} />
           <p>
-            {batch.courses?.title} ? {batch.users?.full_name}
+            {batch.courses?.title} &middot; {batch.users?.full_name}
           </p>
           {batch.batch_members.map((m) => (
             <p key={m.id}>{m.users.full_name}</p>

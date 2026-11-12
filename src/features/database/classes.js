@@ -1,4 +1,7 @@
 'use client';
+import AdminRecordActions from '@/features/management/components/admin-record-editor';
+import ClassRecordings from './class-recordings';
+
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
@@ -74,14 +77,20 @@ export default function DatabaseClasses() {
         <article className="task-row" key={session.id}>
           <div>
             <h3>{session.title}</h3>
+            <AdminRecordActions
+              entity="classes"
+              record={session}
+              onSaved={async () => setSessions((await api('/api/class-sessions')).sessions)}
+            />
             <p>
-              {session.batches.name} ? {new Date(session.start_at).toLocaleString()}
+              {session.batches.name} &middot; {new Date(session.start_at).toLocaleString()}
             </p>
             {session.meeting_url && session.meeting_url.startsWith('https://') && (
               <a href={session.meeting_url} target="_blank" rel="noreferrer">
                 Join class
               </a>
             )}
+            <ClassRecordings classId={session.id} />
           </div>
         </article>
       ))}

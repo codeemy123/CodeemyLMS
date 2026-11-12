@@ -7,9 +7,22 @@ import { chromium } from '@playwright/test';
 import { getPrisma } from '../src/lib/prisma.js';
 import fs from 'node:fs';
 config({ path: ['.env.local', '.env'], quiet: true });
-const origin = 'http://127.0.0.1:3004';
+const origin = process.env.REGISTRATION_TEST_ORIGIN || 'http://127.0.0.1:3004';
+const target = new URL(origin);
+if (
+  !['localhost', '127.0.0.1'].includes(target.hostname) &&
+  !(
+    process.argv.includes('--live') &&
+    target.protocol === 'https:' &&
+    [
+      'codeemy-lms-796236466632.asia-south1.run.app',
+      'codeemy-lms-ro3s2c3rda-el.a.run.app',
+    ].includes(target.hostname)
+  )
+)
+  throw new Error('Unapproved test origin.');
 const marker = randomUUID();
-const emails = ['admin', 'student', 'mentor'].map(
+const emails = ['admin', 'student', 'mentor', 'approved-mentor'].map(
   (role) => 'approval-test-' + role + '-' + marker + '@example.com',
 );
 const password = randomBytes(24).toString('base64url');
@@ -90,6 +103,7 @@ try {
     idToken: studentToken.idToken,
     fullName: 'Duplicate',
     role: 'STUDENT',
+    phone: '9876543210',
   });
   assert.equal(duplicate.status, 409);
   console.log(
@@ -207,6 +221,61 @@ try {
   );
   console.log(
     'PASS Mentor rejection/reason, Admin-only decisions, no self-promotion, one-time review, Admin notifications and responsive review page',
+  );
+  const mentorContext = await browser.newContext();
+  const mentorPage = await mentorContext.newPage();
+  await mentorPage.goto(origin + '/register');
+  await mentorPage.getByRole('button', { name: 'Mentor Guide and support learners' }).click();
+  await mentorPage.getByLabel('Full name', { exact: true }).fill('Approved Mentor ' + marker);
+  await mentorPage.getByLabel('Phone', { exact: true }).fill('9876543210');
+  await mentorPage.getByLabel('Email address', { exact: true }).fill(emails[3]);
+  await mentorPage
+    .getByLabel('Qualification / expertise', { exact: true })
+    .fill('Python and Java mentor');
+  await mentorPage.getByLabel('Password', { exact: true }).fill(password);
+  await mentorPage.getByLabel('Confirm password', { exact: true }).fill(password + '-wrong');
+  await mentorPage.getByRole('button', { name: 'Request academy access', exact: true }).click();
+  await mentorPage
+    .getByRole('alert')
+    .getByText('Passwords do not match.', { exact: true })
+    .waitFor();
+  await mentorPage.getByLabel('Confirm password', { exact: true }).fill(password);
+  await mentorPage.getByRole('button', { name: 'Request academy access', exact: true }).click();
+  await mentorPage
+    .getByRole('heading', { name: 'Waiting for approval' })
+    .waitFor({ timeout: 60000 });
+  const approvedMentor = await db.users.findUnique({ where: { email: emails[3] } });
+  assert.equal(approvedMentor.status, 'INACTIVE');
+  const approvedMentorToken = await firebaseSignIn(emails[3]);
+  assert.equal(
+    (await request('/api/auth/session', 'POST', { idToken: approvedMentorToken.idToken })).status,
+    403,
+  );
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(origin + '/admin/mentors');
+  await page.getByRole('textbox', { name: 'Search registrations' }).fill(emails[1]);
+  assert.equal(await page.getByRole('button', { name: 'Review', exact: true }).count(), 0);
+  await page.getByRole('textbox', { name: 'Search registrations' }).fill(emails[3]);
+  await page.getByRole('button', { name: 'Review', exact: true }).click();
+  await page.getByText('Python and Java mentor', { exact: true }).waitFor();
+  await page.getByText('Password created in Firebase', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Approve account', exact: true }).click();
+  await page
+    .getByText('Account approved. The applicant can now sign in.', { exact: true })
+    .waitFor();
+  const mentorLogin = await request('/api/auth/session', 'POST', {
+    idToken: approvedMentorToken.idToken,
+  });
+  assert.equal(mentorLogin.status, 200);
+  assert.equal((await mentorLogin.json()).role, 'MENTOR');
+  const mentorCookie = mentorLogin.headers.get('set-cookie').split(';')[0];
+  assert.equal((await request('/mentor/dashboard', 'GET', null, null, mentorCookie)).status, 200);
+  assert.equal((await request('/admin/dashboard', 'GET', null, null, mentorCookie)).status, 307);
+  const people = await request('/api/people', 'GET', null, null, adminCookie);
+  assert.equal((await people.json()).users.find((u) => u.email === emails[3]).status, 'ACTIVE');
+  await mentorContext.close();
+  console.log(
+    'PASS Mentor browser details/password validation, role-specific directory approval, email/password login and cross-role denial',
   );
 } catch (error) {
   console.error(

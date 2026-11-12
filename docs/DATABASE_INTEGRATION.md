@@ -89,3 +89,36 @@ Read-only Cloud Run audit found runtime env names only NODE_ENV, Database, Usern
 - Existing manual administrator activation remains available for deliberately provisioned accounts; it cannot overwrite a submitted registration. Existing active accounts do not need reapproval.
 - `node scripts/verify-registration-approvals.mjs` passed with real Firebase and GCP PostgreSQL: browser Student registration, blocked pending access, Admin browser approval, allowed Student login, blocked role escalation/self-approval, duplicate prevention, Mentor rejection/reason, administrator notifications and responsive desktop/mobile review pages. Test accounts/requests/notifications were removed. This test does not complete an interactive Google OAuth login.
 - This feature is locally available on port 3004; deployment is separate.
+
+## Live authentication and in-app notifications � 6 November 2026
+
+Cloud Run revision `codeemy-lms-00009-7gj` is Ready and serves 100% of traffic. The live `/api/auth/config` endpoint now reports `configured: true`, `mode: database`.
+
+- Dedicated runtime service identity: `codeemy-lms-runtime@my-project-8521codeemy-lms.iam.gserviceaccount.com`.
+- Cloud SQL Client permission on the hosting project; Firebase custom role `codeemySessionAuth` on `codeemylms`, with only `firebaseauth.users.get` and `firebaseauth.users.createSession`.
+- DATABASE_URL and the two R2 S3 credentials are supplied through pinned Secret Manager versions. Database connections use the attached Cloud SQL Unix socket. No ADC JSON or private key was deployed.
+- Firebase public web settings and R2 bucket/endpoint are runtime settings. Both Cloud Run hostnames are authorized for Firebase OAuth. Existing domains were preserved.
+- Existing Cloud Build deployer can act as this dedicated runtime identity for future deployments.
+- `scripts/configure-cloud-run.mjs` defaults to a metadata-only dry run; `--apply` performs configuration. `--reuse-secrets` reuses current prepared versions. It does not print secret values.
+
+Live tests passed against `https://codeemy-lms-796236466632.asia-south1.run.app`: real Firebase password login and session issuance for all three roles; cross-role redirects; browser Student registration; pending access denial; Admin browser approval; approved Student login; Mentor rejection/reason; forbidden self-approval/Admin registration; duplicate prevention; attendance/marks and owner-scoped notifications; notification read status; private R2 upload/download and assigned mentor attachment access; profile persistence and photo removal; logout; 18 Admin navigation pages and authenticated course/profile screens. All temporary test accounts, requests, files and notifications were cleaned up.
+
+The user also confirmed that live Google sign-in opens the Admin dashboard. This was an interactive user confirmation, not an automated Google account login.
+
+The user selected in-app notifications only. Email/SMS/push delivery is outside this change. Unconverted LMS preview workflows listed earlier are still pending; this update completes the live authentication/in-app notification configuration, not the entire LMS migration.
+
+Official setup references: https://docs.cloud.google.com/run/docs/configuring/services/secrets , https://docs.cloud.google.com/sql/docs/postgres/connect-run , https://docs.cloud.google.com/iam/docs/roles-permissions/firebaseauth .
+
+## Administrator edit/remove management update
+
+- Student directory activation form is fixed to STUDENT; Mentor directory activation form is fixed to MENTOR. Successful activation refreshes the list. The registration approval flow remains the path for submitted applicants.
+- Reusable Admin-only record editors/removal controls cover accounts, courses, batches, classes, assignments, announcements, modules, lessons, resources, projects, assessments, questions/options, certificates and career opportunity links. All mutation endpoints independently enforce the database actor's ADMIN role; changing client UI state cannot grant mutation access.
+- Account removal means INACTIVE access; Admin identities cannot be edited/removed through this interface. Applicant accounts cannot bypass Account Approvals by directly changing status to ACTIVE.
+- Linked academic history blocks physical deletion. Courses can be archived, batches cancelled, and account access deactivated rather than cascading through enrollments, marks or attendance. Assessment questions/options are locked once attempts exist. Audit events record successful create/update/removal actions.
+- Announcement create/update targets its selected batch/course (or academy-wide when explicitly left unscoped); edited notification content and removal are synchronized transactionally with those database records.
+- Content fields can upload supported files to R2; course/module selection scopes shared learning files. Certificate uploads remain private and recipients are authorized by their certificate record. Current manual limits: videos 100 MB; other supported files 20 MB.
+- Career opportunities are tagged CAREER link resources, kept separate from learning resources. Career applications/tracking is still outside this change.
+- Reports now show live database aggregate counts with CSV export. Audit history shows recent database events and stays read-only; reports/history are not mutable content records.
+- This is an Admin management change. It does not complete the Student assessment attempt/player/project/certificate workflow cutover described in earlier pending items. Zoom automatic recording is planning-only; see ZOOM_RECORDINGS.md.
+
+Verification of the Admin management update: production build and 39 unit tests passed. `scripts/verify-admin-management.mjs` passed with real Firebase/GCP PostgreSQL fixtures: Admin record create/update/remove, announcement target notification synchronization, history-safe deletion refusal, account deactivation, non-Admin API denial, all 18 Admin sidebar pages, fixed single-role Mentor/Student activation forms, and actual browser announcement create/edit/confirm-remove. Temporary accounts, records and uploaded files were cleaned up. Edit forms now retain their reference selections while options load and prevent save until those options are ready. These source changes are local and have not been pushed/deployed yet.

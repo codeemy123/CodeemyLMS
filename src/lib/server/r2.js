@@ -48,7 +48,7 @@ export function objectUrl(key) {
     '/api/storage/object?key=' + encodeURIComponent(key) + '&signature=' + objectSignature(key)
   );
 }
-export async function r2Request(method, key, { body, headers = {} } = {}) {
+export async function r2Request(method, key, { body, headers = {}, query = {} } = {}) {
   if (!validObjectKey(key)) throw new Error('Invalid storage object.');
   const { endpoint, bucket, id, secret } = config();
   async function send() {
@@ -57,6 +57,8 @@ export async function r2Request(method, key, { body, headers = {} } = {}) {
       scope = date + '/auto/s3/aws4_request',
       payload = hash(body || '');
     const path = '/' + bucket + '/' + key.split('/').map(encodeURIComponent).join('/');
+    const encode = value => encodeURIComponent(value).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+    const canonicalQuery = Object.entries(query).map(([k,v]) => [encode(k),encode(String(v))]).sort((a,b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : 1).map(([k,v]) => k + '=' + v).join('&');
     const values = {
       ...headers,
       host: endpoint.host,
@@ -65,13 +67,13 @@ export async function r2Request(method, key, { body, headers = {} } = {}) {
     };
     const names = Object.keys(values).sort();
     const canonical = names.map((name) => name + ':' + String(values[name]).trim() + '\n').join('');
-    const request = [method, path, '', canonical, names.join(';'), payload].join('\n');
+    const request = [method, path, canonicalQuery, canonical, names.join(';'), payload].join('\n');
     const signing = hmac(hmac(hmac(hmac('AWS4' + secret, date), 'auto'), 's3'), 'aws4_request');
     const signature = createHmac('sha256', signing)
       .update('AWS4-HMAC-SHA256\n' + timestamp + '\n' + scope + '\n' + hash(request))
       .digest('hex');
     delete values.host;
-    return fetch(endpoint.origin + path, {
+    return fetch(endpoint.origin + path + (canonicalQuery ? '?' + canonicalQuery : ''), {
       method,
       body,
       headers: {

@@ -1,5 +1,4 @@
-import RecordList from '@/features/workflows/components/question-editor';
-
-export default function AdminQuestionBankPage() {
-  return <RecordList bank />;
+import AdminContent from '@/features/management/components/admin-content';
+export default function Page() {
+  return <AdminContent questions />;
 }

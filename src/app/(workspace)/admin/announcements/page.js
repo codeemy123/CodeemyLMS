@@ -1,5 +1,4 @@
-import RecordList from '@/features/management/components/record-list';
-
-export default function AdminAnnouncementsPage() {
-  return <RecordList />;
+import AdminCollection from '@/features/management/components/admin-collection';
+export default function Page() {
+  return <AdminCollection entity="announcements" />;
 }

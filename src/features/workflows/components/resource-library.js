@@ -105,7 +105,7 @@ export default function ResourceLibrary() {
               Open resource
             </a>
           )}
-          {role !== 'Student' && (
+          {role === 'Admin' && (
             <Button
               secondary
               disabled={uploading}
@@ -118,7 +118,7 @@ export default function ResourceLibrary() {
               Edit resource
             </Button>
           )}
-          {role !== 'Student' && (
+          {role === 'Admin' && (
             <Button
               secondary
               onClick={async () => {
@@ -161,7 +161,7 @@ export default function ResourceLibrary() {
           )}
         </div>
       )}
-      {role !== 'Student' && (
+      {role === 'Admin' && (
         <form className="lower" onSubmit={upload} key={editing?.id || 'new'}>
           <h3>{editing ? 'Edit learning content' : 'Upload learning content'}</h3>
           <div className="form-grid">

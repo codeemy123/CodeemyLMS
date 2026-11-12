@@ -1,7 +1,7 @@
 import { assertOrigin, jsonBody, ApiError, errorResponse } from '@/lib/server/api';
 import { firebaseAuth } from '@/lib/server/firebase';
 import { getPrisma } from '@/lib/prisma';
-import { submitRegistration } from '@/lib/server/registrations';
+import { submitRegistration, requireRegistrationPassword } from '@/lib/server/registrations';
 export const runtime = 'nodejs';
 export async function POST(request) {
   try {
@@ -17,10 +17,15 @@ export async function POST(request) {
     }
     if (Date.now() / 1000 - identity.auth_time > 300)
       throw new ApiError(401, 'Please sign in again to register.');
-    return Response.json(await submitRegistration(getPrisma(), identity, body), {
-      status: 201,
-      headers: { 'Cache-Control': 'no-store' },
-    });
+    const account = await firebaseAuth().getUser(identity.uid);
+    requireRegistrationPassword(identity, account);
+    return Response.json(
+      await submitRegistration(getPrisma(), identity, { ...body, passwordReady: true }),
+      {
+        status: 201,
+        headers: { 'Cache-Control': 'no-store' },
+      },
+    );
   } catch (error) {
     return errorResponse(error);
   }

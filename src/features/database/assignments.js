@@ -1,4 +1,6 @@
 'use client';
+import AdminRecordActions from '@/features/management/components/admin-record-editor';
+
 import { useState, useEffect } from 'react';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
 import { api } from './api';
@@ -105,8 +107,9 @@ export default function DatabaseAssignments() {
       {rows.map((work) => (
         <section className="card" key={work.id} style={{ padding: 24, marginTop: 20 }}>
           <h2>{work.title}</h2>
+          <AdminRecordActions entity="assignments" record={work} onSaved={refresh} />
           <p>
-            {work.courses?.title} ? {work.total_marks} marks
+            {work.courses?.title} &middot; {work.total_marks} marks
           </p>
           <p>{work.description}</p>
           {work.due_date && <p>Due {new Date(work.due_date).toLocaleString()}</p>}
@@ -154,7 +157,7 @@ export default function DatabaseAssignments() {
                 <p>{sub.submission_text}</p>
                 {sub.file_url && <a href={sub.file_url}>Download submission</a>}
                 <p>
-                  {sub.status} ? {sub.marks_awarded ?? 'Not graded'}
+                  {sub.status} &middot; {sub.marks_awarded ?? 'Not graded'}
                 </p>
                 <p>{sub.feedback}</p>
                 {role !== 'Student' && (

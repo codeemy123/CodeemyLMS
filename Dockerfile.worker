@@ -1,0 +1,19 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY prisma ./prisma
+COPY prisma7.config.js ./prisma7.config.js
+RUN npx prisma generate
+
+FROM node:24-bookworm-slim AS worker
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/src/generated ./src/generated
+COPY package.json ./package.json
+COPY src/lib/prisma.js ./src/lib/prisma.js
+COPY src/lib/server/api.js src/lib/server/r2.js src/lib/server/zoom.js src/lib/server/recording-transfer.js src/lib/server/data-access.js src/lib/server/assessment-workflows.js ./src/lib/server/
+COPY scripts/transfer-zoom-recordings.mjs scripts/finalize-assessments.mjs scripts/run-background-job.mjs ./scripts/
+USER node
+CMD ["node", "scripts/run-background-job.mjs"]

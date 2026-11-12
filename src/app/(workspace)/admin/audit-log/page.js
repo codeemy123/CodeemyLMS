@@ -1,5 +1,4 @@
-import RecordList from '@/features/management/components/record-list';
-
-export default function AdminAuditLogPage() {
-  return <RecordList />;
+import AdminInsights from '@/features/management/components/admin-insights';
+export default function Page() {
+  return <AdminInsights audit />;
 }

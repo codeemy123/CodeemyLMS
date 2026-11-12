@@ -1,5 +1,9 @@
 'use client';
 import DatabaseAssignments from '@/features/database/assignments';
+import DatabaseWorkflows from '@/features/database/workflows';
+import DatabaseAssessments from '@/features/database/assessments';
+import DatabaseLeaderboard from '@/features/database/leaderboard';
+import DatabaseOutcomes from '@/features/database/outcomes';
 import DatabaseDashboard from '@/features/database/dashboard';
 import DatabasePeople from '@/features/database/people';
 import DatabaseBatches from '@/features/database/batches';
@@ -281,6 +285,16 @@ export default function WorkspaceLayout({ children }) {
   const notify = (message) => setToast(message);
   const visible = workspaceView(role, courses, students, baseRows, workflows);
   function go(p, d = null) {
+    const href = workspaceHref(role, p, d);
+    if (
+      !window.dispatchEvent(
+        new CustomEvent('codeemy-assessment-leave', {
+          cancelable: true,
+          detail: { navigate: () => router.push(href) },
+        }),
+      )
+    )
+      return;
     setTab('All');
     setSearch('');
     setFilter('All');
@@ -288,7 +302,7 @@ export default function WorkspaceLayout({ children }) {
     setMobile(false);
     setAttempt(false);
     setResult(false);
-    router.push(workspaceHref(role, p, d));
+    router.push(href);
   }
   async function signOut() {
     try {
@@ -796,24 +810,50 @@ export default function WorkspaceLayout({ children }) {
             </button>
             {detail && ' / ' + detail.title}
           </div>
-          {![
-            'Dashboard',
-            'Courses',
-            'My Courses',
-            'Classes',
-            'Attendance',
-            'Students',
-            'Mentors',
-            'Batches',
-            'Profile',
-            'Notifications',
-            'Assignments',
-            'Account Approvals',
-          ].includes(page) && (
-            <p role="status">
-              This workflow is still a preview. Changes here are not saved to the academy database.
-            </p>
-          )}
+          {!(
+            role === 'Admin' &&
+            [
+              'Content',
+              'Projects',
+              'Assessments',
+              'Question Bank',
+              'Certificates',
+              'Announcements',
+              'Reports',
+              'Audit Log',
+              'Career',
+            ].includes(page)
+          ) &&
+            ![
+              'Dashboard',
+              'Courses',
+              'My Courses',
+              'Classes',
+              'Attendance',
+              'Students',
+              'Mentors',
+              'Batches',
+              'Profile',
+              'Notifications',
+              'Assignments',
+              'Account Approvals',
+              'Learning Materials',
+              'Progress',
+              'Mentor',
+              'Projects',
+              'Announcements',
+              'Feedback',
+              'Performance',
+              'Assessments',
+              'Leaderboard',
+              'Certificates',
+              'Career',
+            ].includes(page) && (
+              <p role="status">
+                This workflow is still a preview. Changes here are not saved to the academy
+                database.
+              </p>
+            )}
           <div className="page-title">
             <div>
               <h1>{detail?.title || titles[page] || page}</h1>
@@ -830,7 +870,35 @@ export default function WorkspaceLayout({ children }) {
               </Button>
             )}
           </div>
-          {viewState === 'Loading' ? (
+          {['Certificates', 'Career'].includes(page) ? (
+            <>
+              {role === 'Admin' && children}
+              <DatabaseOutcomes kind={page.toLowerCase()} />
+            </>
+          ) : page === 'Leaderboard' ? (
+            <DatabaseLeaderboard />
+          ) : page === 'Assessments' ? (
+            <>
+              {role === 'Admin' && children}
+              <DatabaseAssessments />
+            </>
+          ) : ['Learning Materials', 'Progress', 'Mentor'].includes(page) ||
+            (role !== 'Admin' &&
+              ['Projects', 'Announcements', 'Feedback', 'Performance'].includes(page)) ? (
+            <DatabaseWorkflows
+              kind={
+                {
+                  'Learning Materials': 'materials',
+                  Progress: 'progress',
+                  Mentor: 'queries',
+                  Projects: 'projects',
+                  Announcements: 'announcements',
+                  Feedback: 'queries',
+                  Performance: 'performance',
+                }[page]
+              }
+            />
+          ) : viewState === 'Loading' ? (
             <div className="card skeleton" aria-label="Loading content" />
           ) : viewState === 'Error' ? (
             <div className="card empty">

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { UserPlus, ArrowRight, ShieldCheck } from 'lucide-react';
-export default function AccountMapping() {
+export default function AccountMapping({ fixedRole, onActivated }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   return (
@@ -24,6 +24,7 @@ export default function AccountMapping() {
           event.preventDefault();
           const form = event.currentTarget;
           const data = Object.fromEntries(new FormData(form));
+          if (fixedRole) data.role = fixedRole;
           setBusy(true);
           try {
             const response = await fetch('/api/admin/accounts', {
@@ -35,6 +36,7 @@ export default function AccountMapping() {
             if (!response.ok) throw new Error(result.error);
             setMessage(result.user.email + ' activated as ' + result.user.role);
             form.reset();
+            onActivated?.();
           } catch (error) {
             setMessage(error.message);
           } finally {
@@ -64,9 +66,14 @@ export default function AccountMapping() {
         </label>
         <label>
           Role
-          <select name="role">
-            <option value="STUDENT">Student</option>
-            <option value="MENTOR">Mentor</option>
+          <select
+            aria-label="Role"
+            name="role"
+            value={fixedRole || undefined}
+            disabled={!!fixedRole}
+          >
+            {(!fixedRole || fixedRole === 'STUDENT') && <option value="STUDENT">Student</option>}
+            {(!fixedRole || fixedRole === 'MENTOR') && <option value="MENTOR">Mentor</option>}
           </select>
         </label>
         <button className="btn" disabled={busy}>

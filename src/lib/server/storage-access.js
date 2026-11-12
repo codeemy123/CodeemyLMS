@@ -2,7 +2,7 @@ import { objectUrl } from './r2.js';
 import { requireActor } from './auth.js';
 import { assertOrigin, ApiError, uuid } from './api.js';
 import { getPrisma } from '@/lib/prisma';
-import { requireCourse } from './data-access.js';
+import { requireCourse, requireSession } from './data-access.js';
 export async function uploadActor(request) {
   assertOrigin(request);
   const actor = await requireActor(request);
@@ -24,6 +24,27 @@ export async function authorizeObject(request, key, write = false) {
   });
   if (!record) throw new ApiError(404, 'File is not registered.');
   if (actor.id === record.user_id || actor.role === 'ADMIN') return actor;
+  if (!write && record.details?.classId && record.entity_type === 'zoom_recording') {
+    await requireSession(db, actor, record.details.classId);
+    const recording = await db.zoom_recordings.findFirst({
+      where: { id: record.entity_id, status: 'READY', object_key: key },
+    });
+    if (!recording) throw new ApiError(404, 'Recording not available.');
+    return actor;
+  }
+  if (!write && actor.role === 'STUDENT') {
+    const certificate = await db.certificates.findFirst({
+      where: { student_id: actor.id, certificate_url: objectUrl(key) },
+    });
+    if (certificate) {
+      const event = await db.audit_logs.findFirst({
+        where: { entity_type: 'certificate_history', entity_id: certificate.id },
+        orderBy: { created_at: 'desc' },
+      });
+      if (event?.action === 'CERTIFICATE_REVOKED') throw new ApiError(410, 'Certificate revoked.');
+      return actor;
+    }
+  }
   if (!write && record.details?.courseId) {
     await requireCourse(db, actor, record.details.courseId);
     return actor;

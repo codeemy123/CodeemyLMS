@@ -2,22 +2,36 @@
 import { useState } from 'react';
 import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 import { login, resetPassword, authMessage } from '@/features/auth/client';
+import RegistrationScreen from '@/features/auth/components/registration-screen';
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [googleProfile, setGoogleProfile] = useState(null);
   async function submit(google = false) {
     setBusy(true);
     setMessage('');
     try {
-      window.location.assign(await login(email.trim(), password, google));
+      const result = await login(email.trim(), password, google);
+      if (typeof result === 'string') window.location.assign(result);
+      else {
+        setGoogleProfile(result.profile);
+        setBusy(false);
+      }
     } catch (error) {
       setMessage(authMessage(error));
       setBusy(false);
     }
   }
+  if (googleProfile)
+    return (
+      <RegistrationScreen
+        initialGoogleProfile={googleProfile}
+        onCancel={() => setGoogleProfile(null)}
+      />
+    );
   return (
     <section className="auth-shell login-warm">
       <div className="auth-card">

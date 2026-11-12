@@ -8,7 +8,17 @@ import { getAuth } from 'firebase-admin/auth';
 import { getPrisma } from '../src/lib/prisma.js';
 config({ path: ['.env.local', '.env'], quiet: true });
 const origin = process.env.AUTH_TEST_ORIGIN || 'http://127.0.0.1:3005';
-if (!['127.0.0.1', 'localhost'].includes(new URL(origin).hostname))
+if (
+  !['127.0.0.1', 'localhost'].includes(new URL(origin).hostname) &&
+  !(
+    process.argv.includes('--live') &&
+    new URL(origin).protocol === 'https:' &&
+    [
+      'codeemy-lms-796236466632.asia-south1.run.app',
+      'codeemy-lms-ro3s2c3rda-el.a.run.app',
+    ].includes(new URL(origin).hostname)
+  )
+)
   throw new Error('Local integration server required.');
 const auth = getAuth(
   initializeApp(

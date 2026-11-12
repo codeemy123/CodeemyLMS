@@ -13,7 +13,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import { api } from '@/features/database/api';
-export default function AccountApprovals() {
+export default function AccountApprovals({ roleFilter = null, onReviewed } = {}) {
   const [requests, setRequests] = useState([]),
     [filter, setFilter] = useState('PENDING'),
     [query, setQuery] = useState(''),
@@ -24,7 +24,8 @@ export default function AccountApprovals() {
     [message, setMessage] = useState('');
   async function load() {
     try {
-      setRequests((await api('/api/admin/approvals')).requests);
+      const records = (await api('/api/admin/approvals')).requests;
+      setRequests(roleFilter ? records.filter((r) => r.user.role === roleFilter) : records);
     } catch (e) {
       setMessage(e.message);
     } finally {
@@ -35,7 +36,7 @@ export default function AccountApprovals() {
     load();
     const timer = setInterval(load, 30000);
     return () => clearInterval(timer);
-  }, []);
+  }, [roleFilter]);
   const current = requests.find((r) => r.id === selected);
   const visible = requests.filter(
     (r) =>
@@ -63,6 +64,7 @@ export default function AccountApprovals() {
           : 'Request rejected. The reason is visible when the applicant signs in.',
       );
       await load();
+      await onReviewed?.();
       setSelected(null);
       setReason('');
     } catch (e) {
@@ -79,7 +81,11 @@ export default function AccountApprovals() {
         </span>
         <div>
           <h2>A trusted start for every account.</h2>
-          <p>Review new Student and Mentor registrations. You decide who joins your academy.</p>
+          <p>
+            {roleFilter
+              ? `Review new ${roleFilter === 'MENTOR' ? 'Mentor' : 'Student'} registrations here. Approval activates their login access.`
+              : 'Review new Student and Mentor registrations. You decide who joins your academy.'}
+          </p>
         </div>
       </section>
       <div className="approval-summary">
@@ -242,6 +248,14 @@ export default function AccountApprovals() {
             <div>
               <dt>Applicant note</dt>
               <dd>{current.details?.message || 'No note provided'}</dd>
+            </div>
+            <div>
+              <dt>Email/password sign-in</dt>
+              <dd>
+                {current.details?.passwordReady
+                  ? 'Password created in Firebase'
+                  : 'Legacy request; verify sign-in setup'}
+              </dd>
             </div>
           </dl>
           {current.status === 'PENDING' ? (

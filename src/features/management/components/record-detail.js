@@ -71,7 +71,9 @@ export default function RecordDetail() {
         )}
         {role !== 'Student' && (
           <div className="form-actions">
-            <Button onClick={() => setModal('Edit class')}>Manage class</Button>
+            {role === 'Admin' && (
+              <Button onClick={() => setModal('Edit class')}>Manage class</Button>
+            )}
             <Button secondary onClick={() => go('Attendance')}>
               Take attendance
             </Button>

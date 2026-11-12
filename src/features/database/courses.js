@@ -1,4 +1,6 @@
 'use client';
+import AdminRecordActions from '@/features/management/components/admin-record-editor';
+
 import { useEffect, useState } from 'react';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
 import { api } from './api';
@@ -82,7 +84,7 @@ export default function DatabaseCourses() {
           <article className="card" style={{ padding: 24 }} key={course.id}>
             <h2>{course.title}</h2>
             <p>
-              {course.category} ? {course.status}
+              {course.category} &middot; {course.status}
             </p>
             <p>{course.description}</p>
             <p>Mentor: {course.users?.full_name || 'Not assigned'}</p>
@@ -93,11 +95,17 @@ export default function DatabaseCourses() {
               <section key={module.id}>
                 <h3>{module.title}</h3>
                 {module.lessons.map((lesson) => (
-                  <p key={lesson.id}>{lesson.title}</p>
+                  <p key={lesson.id}>
+                    {role === 'Student' ? (
+                      <a href={'/student/progress?lesson=' + lesson.id}>{lesson.title}</a>
+                    ) : (
+                      lesson.title
+                    )}
+                  </p>
                 ))}
               </section>
             ))}
-            {role === 'Admin' && <button onClick={() => setEditing(course)}>Edit course</button>}
+            <AdminRecordActions entity="courses" record={course} onSaved={refresh} />
           </article>
         ))}
       </div>

@@ -1,5 +1,4 @@
-import ProgressReports from '@/features/workflows/components/report-center';
-
-export default function AdminReportsPage() {
-  return <ProgressReports />;
+import AdminInsights from '@/features/management/components/admin-insights';
+export default function Page() {
+  return <AdminInsights />;
 }

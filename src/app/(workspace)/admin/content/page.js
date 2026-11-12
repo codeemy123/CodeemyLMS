@@ -1,5 +1,4 @@
-import RecordList from '@/features/workflows/components/resource-library';
-
-export default function AdminContentPage() {
-  return <RecordList />;
+import AdminContent from '@/features/management/components/admin-content';
+export default function Page() {
+  return <AdminContent />;
 }

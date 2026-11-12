@@ -2388,3 +2388,158 @@ select:focus-visible {
     width: 100%;
   }
 }
+
+/* Administrator-only record management. */
+.admin-record-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin: 15px 0;
+}
+.admin-record-actions > .btn {
+  padding: 8px 12px;
+  font-size: 11px;
+  min-height: 34px;
+}
+.admin-record-actions > p {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: #a55c3c;
+}
+.admin-record-actions .admin-remove-button {
+  color: #ad5c50;
+  border-color: #efd2c9;
+  background: #fffaf7;
+}
+.admin-record-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #30212d70;
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+}
+.admin-record-dialog {
+  background: #fffdfb;
+  border: 1px solid #efd8c8;
+  border-radius: 19px;
+  box-shadow: 0 22px 80px #26182333;
+  padding: 27px;
+  width: min(100%, 700px);
+  max-height: 88dvh;
+  overflow: auto;
+}
+.admin-record-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  gap: 16px;
+}
+.admin-record-heading h2 {
+  font-size: 23px;
+  margin: 0;
+}
+.admin-record-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 17px;
+}
+.admin-record-form label:has(textarea),
+.admin-record-form > p,
+.admin-record-buttons {
+  grid-column: 1/-1;
+}
+.admin-record-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.admin-record-dialog > p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #a0816c;
+}
+.admin-record-hint {
+  color: #a58a76;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.admin-collection {
+  display: grid;
+  gap: 19px;
+}
+.admin-collection .toolbar {
+  margin: 0;
+}
+.admin-collection .approval-search {
+  margin-left: 0;
+  flex: 1;
+}
+.admin-collection-editor {
+  padding: 27px;
+}
+.admin-collection-editor > h2 {
+  font-size: 22px;
+  margin: 0 0 22px;
+}
+.admin-collection-item {
+  padding: 25px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  justify-content: space-between;
+}
+.admin-collection-item > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+.admin-collection-item h2 {
+  font-size: 19px;
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+.admin-collection-item p {
+  color: #a18572;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+.admin-collection-item small {
+  display: block;
+  color: #b69a83;
+  margin-top: 12px;
+}
+.admin-collection-item > .admin-record-actions {
+  margin: 0;
+  flex-shrink: 0;
+}
+@media (max-width: 700px) {
+  .admin-record-backdrop {
+    padding: 14px;
+  }
+  .admin-record-dialog {
+    padding: 22px;
+  }
+  .admin-record-form {
+    grid-template-columns: 1fr;
+  }
+  .admin-collection-item {
+    flex-direction: column;
+  }
+  .admin-collection-item > .admin-record-actions {
+    align-self: flex-start;
+  }
+  .admin-record-dialog .btn {
+    font-size: 12px;
+  }
+}
+.workflow-card { padding: clamp(20px, 3vw, 32px); margin-bottom: 20px; }
+.workflow-card video { display: block; width: 100%; max-height: 65vh; background: #201629; border-radius: 16px; margin: 16px 0; }
+.workflow-card fieldset { border: 1px solid #e7d9d2; border-radius: 16px; padding: 20px; margin: 20px 0; }
+.workflow-card fieldset label { display: flex; gap: 12px; padding: 10px 0; }
+.workflow-card blockquote { border-left: 3px solid #dd7752; padding: 12px 20px; margin: 16px 0; }

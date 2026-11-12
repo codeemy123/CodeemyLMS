@@ -21,6 +21,18 @@ export const GET = authenticated(async (_request, _context, actor, db) => ({
 export const PATCH = authenticated(async (request, _context, actor, db) => {
   const body = await jsonBody(request);
   const data = { updated_at: new Date() };
+  if (body.collegeName !== undefined) {
+    if (actor.role !== 'STUDENT') throw new ApiError(403, 'College details are for students.');
+    data.student_profiles = {
+      upsert: {
+        create: { college_name: text(body.collegeName, 255, false) || null },
+        update: {
+          college_name: text(body.collegeName, 255, false) || null,
+          updated_at: new Date(),
+        },
+      },
+    };
+  }
   if (body.fullName !== undefined) data.full_name = text(body.fullName, 150);
   if (body.phone !== undefined) data.phone = text(body.phone, 20, false) || null;
   if (body.photo !== undefined) {
@@ -54,6 +66,7 @@ export const PATCH = authenticated(async (request, _context, actor, db) => {
       role: true,
       status: true,
       profile_image: true,
+      student_profiles: true,
     },
   });
   return { user };

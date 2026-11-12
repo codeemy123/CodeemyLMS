@@ -1,5 +1,5 @@
 import { uploadPolicy } from './storage-policy';
-export async function uploadFile(file) {
+export async function uploadFile(file, { courseId } = {}) {
   if (!file?.size) return null;
   uploadPolicy(file.name, file.size);
   const response = await fetch('/api/storage/upload', {
@@ -8,6 +8,7 @@ export async function uploadFile(file) {
       'Content-Type': file.type || 'application/octet-stream',
       'x-codeemy-upload': '1',
       'x-file-name': encodeURIComponent(file.name),
+      ...(courseId ? { 'x-course-id': courseId } : {}),
     },
     body: file,
   });
