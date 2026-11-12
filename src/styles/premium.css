@@ -1581,7 +1581,19 @@ textarea {
   background: #ffffff07;
 }
 .login-warm .auth-form-panel {
-  background: radial-gradient(ellipse at 100% 0, #fff0e5a6, transparent 50%), #fffdfb;
+  background: radial-gradient(ellipse at 100% 0, #fff0e570, transparent 50%), #fff;
+}
+.auth-shell,
+.registration-shell {
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.auth-shell button,
+.registration-shell button,
+.auth-shell input,
+.registration-shell input,
+.registration-shell textarea {
+  font-family: inherit;
 }
 .login-warm .auth-heading {
   margin-bottom: 26px;
@@ -1591,36 +1603,42 @@ textarea {
   letter-spacing: -1.3px;
 }
 .login-warm .auth-heading p {
-  color: #9c8579;
+  color: #59473e;
+  font-size: 16px;
+  line-height: 1.65;
 }
 .login-warm .auth-google {
   border-color: #eaddd4;
   min-height: 51px;
   box-shadow: 0 2px 4px #4d251a03;
   color: #4a372e;
+  font-size: 16px;
+  font-weight: 650;
 }
 .login-warm .auth-google:hover {
   background: #fff5ec;
   border-color: #d8b29e;
 }
 .login-warm .auth-field {
-  color: #695045;
-  font-weight: 600;
+  color: #352b26;
+  font-size: 15px;
+  font-weight: 650;
 }
 .login-warm .auth-input-wrap {
   min-height: 52px;
-  border-color: #e9ded6;
+  border-color: #c6afa1;
   background: #fff;
 }
 .login-warm .auth-input-wrap input {
   color: #463127;
-  font-size: 13px;
+  font-size: 16px;
 }
 .login-warm .auth-input-wrap input::placeholder {
-  color: #b29e92;
+  color: #74645b;
+  opacity: 1;
 }
 .login-warm .auth-input-wrap > svg {
-  color: #b69b88;
+  color: #80614e;
   flex-shrink: 0;
 }
 .login-warm .auth-input-wrap:focus-within {
@@ -1629,7 +1647,7 @@ textarea {
 }
 .login-warm .auth-password-toggle {
   border: 0;
-  color: #ad9484;
+  color: #735548;
 }
 .login-warm .auth-submit {
   display: flex;
@@ -1639,7 +1657,7 @@ textarea {
   color: #fff;
   border: 0;
   min-height: 52px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 650;
   border-radius: 10px;
   background: linear-gradient(110deg, #bc4b24, #ce533c 55%, #af3d66);
@@ -1658,16 +1676,18 @@ textarea {
   cursor: wait;
 }
 .login-warm .auth-forgot {
-  color: #b65b38;
+  color: #9b351c;
   border: 0;
-  font-size: 11px;
+  font-size: 14px;
 }
 .login-warm .auth-disclaimer {
-  color: #a58e81;
+  color: #68534a;
+  font-size: 13px;
   line-height: 1.8;
 }
 .login-warm .auth-divider {
-  color: #ac978a;
+  color: #705d52;
+  font-size: 14px;
 }
 .login-warm .auth-divider:before,
 .login-warm .auth-divider:after {
@@ -2056,13 +2076,13 @@ select:focus-visible {
 }
 .registration-link {
   margin-top: 12px !important;
-  font-size: 12px !important;
+  font-size: 15px !important;
 }
 .registration-link a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #b85230;
+  color: #9b351c;
   font-weight: 600;
   text-decoration: none;
 }
@@ -2126,7 +2146,7 @@ select:focus-visible {
   overflow-wrap: anywhere;
 }
 .registration-google-identity small {
-  color: #947b6e;
+  color: #655046;
   margin-top: 4px;
   font-size: 12px;
 }
@@ -2175,9 +2195,9 @@ select:focus-visible {
 .registration-role-options small {
   display: block;
   margin-top: 6px;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.6;
-  color: #957d70;
+  color: #655046;
 }
 .registration-dialog-note {
   display: flex;
@@ -2289,9 +2309,9 @@ select:focus-visible {
   margin: 12px 0;
 }
 .registration-intro > p {
-  color: #a18777;
+  color: #59473e;
   line-height: 1.7;
-  font-size: 13px;
+  font-size: 16px;
 }
 .registration-role-picker {
   display: grid;
@@ -2337,17 +2357,19 @@ select:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 12px;
-  color: #896b59;
+  font-size: 15px;
+  font-weight: 600;
+  color: #40312a;
 }
 .registration-form input,
 .registration-form textarea {
   width: 100%;
-  border: 1px solid #eaddd2;
+  border: 1px solid #c6afa1;
   border-radius: 9px;
   min-height: 46px;
   background: #fffdfb;
   color: #4c3028;
+  font-size: 16px;
   padding: 12px;
 }
 .registration-form input:focus,
@@ -2357,18 +2379,19 @@ select:focus-visible {
 }
 .registration-form input::placeholder,
 .registration-form textarea::placeholder {
-  color: #b7a290;
+  color: #74645b;
+  opacity: 1;
 }
 .registration-optional {
   display: inline;
-  font-size: 10px;
+  font-size: 13px;
 }
 .registration-review-note {
   display: flex;
   gap: 10px;
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.7;
-  color: #a48168;
+  color: #63452f;
   background: #fff6eb;
   border-radius: 9px;
   padding: 13px;
@@ -2381,17 +2404,38 @@ select:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  font-size: 10px;
-  color: #b09683;
+  font-size: 13px;
+  color: #68534a;
   margin-top: 25px;
 }
 .registration-signin {
   text-align: center;
-  color: #a18776;
-  font-size: 12px;
+  color: #59473e;
+  font-size: 15px;
 }
 .registration-signin a {
   color: #b95330;
+}
+.registration-shell .auth-google {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #352b26;
+  min-height: 50px;
+}
+.registration-shell .auth-divider {
+  font-size: 14px;
+  color: #705d52;
+}
+.registration-shell .registration-role-picker button {
+  color: #655046;
+}
+.registration-shell .registration-role-picker .selected {
+  color: #963819;
+}
+.registration-shell .registration-role-picker small {
+  font-size: 12px;
+  line-height: 1.5;
 }
 .registration-success {
   display: flex;
