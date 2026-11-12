@@ -21,6 +21,37 @@ test('database writes reject missing, malformed and cross-site origins', () => {
     ),
   );
 });
+test('Cloud Run permits only the exact public LMS origins through the proxy', () => {
+  const host = 'codeemy-lms-796236466632.asia-south1.run.app';
+  for (const origin of ['https://lerno.codeemy.in', 'https://learnoin.netlify.app'])
+    assert.doesNotThrow(() =>
+      assertOrigin(
+        new Request('https://' + host + '/api/auth/session', {
+          headers: { host, origin },
+        }),
+      ),
+    );
+  for (const origin of ['https://lerno.codeemy.in.evil.example', 'http://lerno.codeemy.in', 'null'])
+    assert.throws(
+      () =>
+        assertOrigin(
+          new Request('https://' + host + '/api/auth/session', {
+            headers: { host, origin, 'x-forwarded-host': 'lerno.codeemy.in' },
+          }),
+        ),
+      { status: 403 },
+    );
+  assert.throws(
+    () =>
+      assertOrigin(
+        new Request('https://other.example/api/auth/session', {
+          headers: { host: 'other.example', origin: 'https://lerno.codeemy.in' },
+        }),
+      ),
+    { status: 403 },
+  );
+});
+
 test('database policy derives course/session access from the server actor ID', () => {
   const student = { id: 'student-id', role: 'STUDENT' },
     mentor = { id: 'mentor-id', role: 'MENTOR' };

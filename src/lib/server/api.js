@@ -8,7 +8,12 @@ export function assertOrigin(request) {
   const origin = request.headers.get('origin');
   const host = request.headers.get('host') || new URL(request.url).host;
   try {
-    if (!origin || new URL(origin).host !== host) throw new Error();
+    if (!origin) throw new Error();
+    const source = new URL(origin);
+    const backendHost = 'codeemy-lms-796236466632.asia-south1.run.app';
+    const publicOrigins = ['https://lerno.codeemy.in', 'https://learnoin.netlify.app'];
+    const trustedProxyOrigin = host === backendHost && publicOrigins.includes(origin);
+    if (source.host !== host && !trustedProxyOrigin) throw new Error();
   } catch {
     throw new ApiError(403, 'A same-origin request is required.');
   }

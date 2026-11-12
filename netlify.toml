@@ -4,5 +4,14 @@
 
 [build.environment]
   NODE_VERSION = "24"
+  LMS_BACKEND_ORIGIN = "https://codeemy-lms-796236466632.asia-south1.run.app"
   # Public identifiers, not credentials. Keep all actual credential scanning enabled.
   SECRETS_SCAN_OMIT_KEYS = "CLOUDFLARE_R2_BUCKET_NAME,FIREBASE_PROJECT_ID"
+
+# Keep browser requests and host-only session cookies on the public LMS domain.
+# Backend execution, Firebase Admin and database access remain on Cloud Run.
+[[redirects]]
+  from = "/api/*"
+  to = "https://codeemy-lms-796236466632.asia-south1.run.app/api/:splat"
+  status = 200
+  force = true

@@ -12,8 +12,12 @@ The shared workspace server layout verifies the actual Firebase session and acti
 
 Next.js can emit a meta redirect after streaming has started. Verification scripts check the actual redirect target, and browser tests confirm forged cookies land on /login while /api/auth/me rejects them with 401. Tests do not treat an arbitrary 200 response as a redirect.
 
-## Runtime configuration still required
+## GCP backend routing
 
-A successful build does not establish database/auth connectivity. Netlify cannot use a localhost database URL, Cloud Run's /cloudsql socket, a local ADC file, or Cloud Run's service identity. Configure an appropriate secured Cloud SQL connection and Firebase Admin credentials for the Netlify runtime separately. Keep database and R2 credentials secret, do not deploy MIGRATION_DATABASE_URL, and complete the pending additive database migrations before enabling the new workflow pages.
+Production `/api/*` requests are force-proxied by netlify.toml to the CodeEmy Cloud Run service. Session cookies stay host-only on the public domain. `LMS_BACKEND_ORIGIN` is a public build setting; the Next.js workspace server layouts verify the cookie against Cloud Run `/api/auth/me` and enforce the returned role. They do not need Firebase Admin or database credentials on Netlify. Cloud Run permits only the exact LMS custom/Netlify origins for proxied writes, and continues to validate identity, status and permissions on every protected API.
+
+Redeploy both the backend and Netlify after changing these settings. Do not set `LMS_BACKEND_ORIGIN` on Cloud Run itself. Existing Cloud SQL, Firebase Admin and R2 server credentials remain configured on GCP.
+
+A successful build does not establish database/auth connectivity. Keep database, Firebase Admin and R2 credentials on GCP; Netlify uses the backend proxy rather than a localhost database, Cloud Run socket or local ADC file. Never deploy MIGRATION_DATABASE_URL. Complete pending additive database migrations before enabling the new workflow pages.
 
 Actual Netlify Edge packaging/deployment must be confirmed from its next deploy log; local Next.js build success alone is not proof of a completed Netlify deployment.

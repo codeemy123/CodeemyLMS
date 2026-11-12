@@ -1,0 +1,11 @@
+.gcloudignore
+.git
+.git/**
+#!include:.gitignore
+.env
+.env.*
+node_modules
+.next
+artifacts
+test-results
+playwright-report
