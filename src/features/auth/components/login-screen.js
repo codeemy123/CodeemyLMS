@@ -244,15 +244,6 @@ export default function LoginScreen() {
                 </span>
               </label>
             )}
-            {mode === 'login' && (
-              <button
-                type="button"
-                className="auth-forgot"
-                onClick={() => setError('Password reset is not connected in this demo.')}
-              >
-                Forgot password?
-              </button>
-            )}
             {error && (
               <p className="auth-error" role="alert">
                 {error}

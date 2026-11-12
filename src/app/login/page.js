@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Mail, LockKeyhole, Eye, EyeOff, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
-import { login, resetPassword, authMessage } from '@/features/auth/client';
+import { login, authMessage } from '@/features/auth/client';
 import RegistrationScreen from '@/features/auth/components/registration-screen';
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -116,28 +116,6 @@ export default function Login() {
             <button className="auth-submit" disabled={busy} type="submit">
               {busy ? 'Signing in...' : 'Sign in'}
               <ArrowRight size={17} />
-            </button>
-            <button
-              type="button"
-              className="auth-forgot"
-              disabled={busy}
-              onClick={async () => {
-                if (!email.trim()) {
-                  setMessage('Enter your email address first.');
-                  return;
-                }
-                setBusy(true);
-                try {
-                  await resetPassword(email.trim());
-                  setMessage('If your account is eligible, a password reset email will arrive.');
-                } catch (error) {
-                  setMessage(authMessage(error));
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              Forgot password?
             </button>
             {message && (
               <p role="alert" className="auth-error">
