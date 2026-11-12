@@ -16,7 +16,7 @@ COPY public ./public
 COPY src ./src
 COPY prisma ./prisma
 COPY prisma7.config.js ./
-RUN npx prisma generate && npm run build
+RUN npm run build
 
 FROM base AS runner
 ENV NODE_ENV=production \
