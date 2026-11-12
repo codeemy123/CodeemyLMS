@@ -4,3 +4,5 @@
 
 [build.environment]
   NODE_VERSION = "24"
+  # Public identifiers, not credentials. Keep all actual credential scanning enabled.
+  SECRETS_SCAN_OMIT_KEYS = "CLOUDFLARE_R2_BUCKET_NAME,FIREBASE_PROJECT_ID"

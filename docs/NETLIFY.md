@@ -2,6 +2,8 @@
 
 The build command is `npm run build` and publish directory is `.next`; Node 24 is configured in netlify.toml. The build generates the ignored Prisma client before compiling Next.js. Never commit generated clients or local environment files to work around missing build output.
 
+Bucket names and Firebase project IDs are public resource identifiers. Netlify's scan flags their ordinary occurrences in package names/docs if those variables are marked secret in the dashboard. netlify.toml excludes only CLOUDFLARE_R2_BUCKET_NAME and FIREBASE_PROJECT_ID from value matching. DATABASE_URL, R2 access/secret keys, Firebase private keys and other credentials remain scanned. Do not disable the scanner globally or exclude whole source/build directories.
+
 ## Middleware compatibility
 
 Netlify's Next.js adapter packages Proxy/middleware in an Edge wrapper. Importing Firebase Admin, Prisma or `pg` into src/proxy.js breaks this bundling. Proxy now performs only the early missing-cookie/legacy-login redirects and forwards the canonical workspace section in an overwritten request header.
