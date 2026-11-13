@@ -72,6 +72,8 @@ export const navigation = {
     ['Account Approvals', ShieldCheck],
     ['Courses', BookOpen],
     ['Batches', Layers],
+    ['Classes', CalendarDays],
+    ['Attendance', Check],
     ['Content', FileText],
     ['Assignments', ClipboardList],
     ['Assessments', ListChecks],

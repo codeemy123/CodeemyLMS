@@ -8,7 +8,9 @@ import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getPrisma } from '../src/lib/prisma.js';
 config({ path: ['.env.local', '.env'], quiet: true });
-const origin = process.env.AUTH_TEST_ORIGIN || 'http://127.0.0.1:3005';
+const origin =
+  process.env.AUTH_TEST_ORIGIN ||
+  (process.argv.includes('--live') ? 'https://lerno.codeemy.in' : 'http://127.0.0.1:3005');
 if (
   !['127.0.0.1', 'localhost'].includes(new URL(origin).hostname) &&
   !(
@@ -17,6 +19,7 @@ if (
     [
       'codeemy-lms-796236466632.asia-south1.run.app',
       'codeemy-lms-ro3s2c3rda-el.a.run.app',
+      'lerno.codeemy.in',
     ].includes(new URL(origin).hostname)
   )
 )
@@ -400,6 +403,14 @@ try {
   await adminRemove('people', student.id);
   assert.equal((await call('STUDENT', '/api/auth/me')).status, 403);
   await adminEdit('people', student.id, { status: 'ACTIVE' });
+  await adminEdit('people', mentor.id, {
+    phone: '9998887776',
+    full_name: 'LMS integration MENTOR',
+  });
+  assert.equal((await db.users.findUnique({ where: { id: mentor.id } })).phone, '9998887776');
+  await adminRemove('people', mentor.id);
+  assert.equal((await call('MENTOR', '/api/auth/me')).status, 403);
+  await adminEdit('people', mentor.id, { status: 'ACTIVE' });
   console.log(
     'PASS Admin CRUD, targeted announcement updates/removal, protected history, user deactivation and forbidden role access',
   );
