@@ -179,7 +179,7 @@ export default function DatabaseDashboard() {
             </div>
           )}
         </div>
-        {!student && (
+        {!student && !admin && (
           <div className="academy-hero-art" aria-hidden="true">
             <div className="academy-orbit orbit-one" />
             <div className="academy-orbit orbit-two" />
