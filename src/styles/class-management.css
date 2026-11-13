@@ -1,0 +1,261 @@
+.main .topbar {
+  position: relative;
+  top: auto;
+}
+.main .class-management {
+  padding: clamp(22px, 3vw, 34px);
+}
+.class-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.class-heading-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border-radius: 16px;
+  color: #6950bd;
+  background: #f0ebff;
+}
+.class-section-heading h2 {
+  margin: 0 0 6px;
+  font-size: 23px;
+}
+.main .class-section-heading p {
+  margin: 0;
+  color: #5a647a;
+  font-size: 15px;
+}
+.main .class-schedule-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid #e3e5f1;
+  border-radius: 18px;
+  background: #fbfbff;
+}
+.class-schedule-form label,
+.attendance-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.main .class-schedule-form input,
+.main .class-schedule-form select,
+.main .attendance-selection select {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+}
+.main .class-schedule-form label small {
+  font-weight: 400;
+  font-size: 13px;
+}
+.class-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  grid-column: 1/-1;
+  border-top: 1px solid #e3e5f1;
+  padding-top: 22px;
+  margin-top: 4px;
+}
+.main .class-form-actions p {
+  margin: 0;
+  font-size: 14px;
+  color: #606b80;
+}
+.class-form-actions .btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+.main .class-management .btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.class-prerequisite {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  background: #f1edff;
+  border: 1px solid #e1d7fa;
+  border-radius: 12px;
+}
+.class-prerequisite p {
+  margin: 0;
+}
+.class-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 32px 0 18px;
+}
+.class-list-heading h3 {
+  margin: 0;
+  font-size: 20px;
+}
+.class-list-heading > span {
+  color: #626880;
+  font-size: 14px;
+  background: #f1eff9;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+.class-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 38px 22px;
+  border: 1px dashed #d9d4ea;
+  border-radius: 18px;
+  background: #fcfbff;
+  gap: 12px;
+}
+.class-empty > svg {
+  color: #8a75c3;
+}
+.class-empty h3 {
+  margin: 0;
+  font-size: 19px;
+}
+.main .class-empty p {
+  margin: 0;
+  max-width: 480px;
+  font-size: 15px;
+}
+.class-empty .btn {
+  margin-top: 8px;
+}
+.class-empty.compact {
+  padding: 30px 20px;
+  margin-top: 26px;
+}
+.class-session-card {
+  border: 1px solid #e2e5ef;
+  border-radius: 16px;
+  padding: 24px;
+  margin: 16px 0;
+}
+.class-session-card h3 {
+  margin: 0 0 12px;
+}
+.class-session-card .btn {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.attendance-selection {
+  max-width: 760px;
+  padding: 22px;
+  border-radius: 16px;
+  background: #f8f7fd;
+  border: 1px solid #e1dfef;
+}
+.attendance-roster {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.main .attendance-student {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid #e2e5ef;
+  border-radius: 14px;
+  padding: 16px 20px;
+}
+.attendance-student strong {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+.main .attendance-student select {
+  width: 100%;
+  min-height: 46px;
+}
+.class-notice {
+  padding: 14px 18px;
+  border: 1px solid #dcd4ef;
+  background: #f6f2ff;
+  border-radius: 12px;
+  margin-top: 22px;
+  overflow-wrap: anywhere;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(
+    .class-schedule-form,
+    .attendance-selection,
+    .class-empty,
+    .class-session-card,
+    .attendance-student
+  ) {
+  background: #192034;
+  border-color: #3c435b;
+}
+[data-workspace-theme='dark'] .main .class-heading-icon {
+  background: #352b55;
+  color: #d3bdff;
+}
+[data-workspace-theme='dark']
+  .main
+  :is(.class-prerequisite, .class-notice, .class-list-heading > span) {
+  background: #322a4c;
+  border-color: #4f426d;
+  color: #ddd3f3;
+}
+[data-workspace-theme='dark'] .class-form-actions {
+  border-color: #414960;
+}
+@media (max-width: 700px) {
+  .main .class-schedule-form {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px 16px;
+    gap: 20px;
+  }
+  .class-section-heading {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .class-heading-icon {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    border-radius: 13px;
+  }
+  .class-form-actions,
+  .class-prerequisite {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .class-form-actions .btn {
+    width: 100%;
+  }
+  .main .attendance-student {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 18px;
+  }
+  .attendance-selection {
+    padding: 18px;
+  }
+  .class-session-card {
+    padding: 20px 16px;
+  }
+}

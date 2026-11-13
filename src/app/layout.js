@@ -4,6 +4,7 @@ import '@/styles/auth-refined.css';
 import '@/styles/workspace-blue.css';
 import '@/styles/workspace-controls.css';
 import '@/styles/legal.css';
+import '@/styles/class-management.css';
 export const metadata = {
   title: 'CodeEmy · Learning workspace',
   description: 'CodeEmy Edutech learning management workspace',
