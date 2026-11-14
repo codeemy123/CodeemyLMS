@@ -2,6 +2,7 @@ import { jsonBody, text, uuid, roleAllowed, ApiError } from '@/lib/server/api';
 import { authenticated } from '@/lib/server/auth';
 import { sessionScope } from '@/lib/server/data-access';
 import { zoomRequest } from '@/lib/server/zoom';
+import { sendClassInvitationEmails } from '@/lib/server/class-invitations';
 export const runtime = 'nodejs';
 export const GET = authenticated(async (_request, _context, actor, db) => ({
   sessions: await db.class_sessions.findMany({
@@ -17,7 +18,7 @@ export const POST = authenticated(async (request, _context, actor, db) => {
   const batchId = uuid(body.batchId);
   const batch = await db.batches.findUnique({
     where: { id: batchId },
-    include: { users: { select: { email: true, full_name: true } } },
+    include: { users: { select: { id: true, email: true, full_name: true } } },
   });
   if (!batch) throw new ApiError(400, 'Select a valid batch.');
   const start = new Date(body.startAt);
@@ -69,25 +70,32 @@ export const POST = authenticated(async (request, _context, actor, db) => {
         400,
         'Enter a licensed Zoom host email, or assign a mentor with an academy email to this batch.',
       );
-    const meeting = await zoomRequest(`/users/${encodeURIComponent(hostEmail)}/meetings`, {
-      method: 'POST',
-      body: {
-        topic: text(body.title, 255),
-        agenda: description || undefined,
-        type: 2,
-        start_time: start.toISOString(),
-        duration: durationMinutes,
-        timezone: 'Asia/Kolkata',
-        settings: {
-          auto_recording: 'cloud',
-          waiting_room: true,
-          join_before_host: false,
-          mute_upon_entry: true,
-          host_video: true,
-          participant_video: false,
+    let meeting;
+    try {
+      meeting = await zoomRequest(`/users/${encodeURIComponent(hostEmail)}/meetings`, {
+        method: 'POST',
+        body: {
+          topic: text(body.title, 255),
+          agenda: description || undefined,
+          type: 2,
+          start_time: start.toISOString(),
+          duration: durationMinutes,
+          timezone: 'Asia/Kolkata',
+          settings: {
+            auto_recording: 'cloud',
+            waiting_room: true,
+            join_before_host: false,
+            mute_upon_entry: true,
+            host_video: true,
+            participant_video: false,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      if (error instanceof ApiError && /user does not exist/i.test(error.message))
+        throw new ApiError(400, `The Zoom host ${hostEmail} is not a user in your Zoom organization. Invite this mentor in Zoom Admin, assign a Zoom Workplace Pro licence, have them accept the invitation, then schedule the class again.`);
+      throw error;
+    }
     if (typeof meeting?.join_url !== 'string' || typeof meeting?.uuid !== 'string')
       throw new ApiError(502, 'Zoom did not return a meeting link. Please try again.');
     meetingUrl = meeting.join_url;
@@ -101,7 +109,7 @@ export const POST = authenticated(async (request, _context, actor, db) => {
       throw new ApiError(400, 'Use an HTTPS meeting URL.');
     }
   }
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     const session = await tx.class_sessions.create({
       data: {
         batch_id: batchId,
@@ -119,7 +127,10 @@ export const POST = authenticated(async (request, _context, actor, db) => {
       await tx.zoom_class_links.create({
         data: { meeting_uuid: meetingUuid, class_id: session.id },
       });
-    const members = await tx.batch_members.findMany({ where: { batch_id: batchId } });
+    const members = await tx.batch_members.findMany({
+      where: { batch_id: batchId },
+      include: { users: { select: { id: true, email: true, full_name: true } } },
+    });
     const recipients = [
       ...new Set([
         ...members.map((m) => m.student_id),
@@ -136,6 +147,22 @@ export const POST = authenticated(async (request, _context, actor, db) => {
           reference_id: session.id,
         })),
       });
-    return { session, zoomMeeting: Boolean(meetingUuid) };
+    return { session, zoomMeeting: Boolean(meetingUuid), recipients: members.map((member) => member.users).filter(Boolean) };
   });
+  const invitations = await sendClassInvitationEmails({
+    students: result.recipients,
+    mentor: batch.users,
+    session: result.session,
+    batch,
+  });
+  await db.audit_logs.create({
+    data: {
+      user_id: actor.id,
+      action: 'CLASS_INVITATIONS_DISPATCHED',
+      entity_type: 'class_session',
+      entity_id: result.session.id,
+      details: invitations,
+    },
+  }).catch(() => {});
+  return { session: result.session, zoomMeeting: result.zoomMeeting, invitations };
 });

@@ -139,12 +139,20 @@ export default function DatabaseClasses({ mode = 'class' }) {
       } else {
         data.startAt = new Date(data.startAt).toISOString();
       }
-      await api('/api/class-sessions', { method: 'POST', body: JSON.stringify(data) });
+      const created = await api('/api/class-sessions', { method: 'POST', body: JSON.stringify(data) });
       await refreshSessions();
       form.reset();
       if (isLive) closeLiveForm(true);
       setMessageKind('success');
-      setMessage(isLive ? 'Your Zoom meeting is ready. The selected batch has been notified and can join from their Classes page.' : `${sessionLabelTitle} scheduled and participants notified.`);
+      const invitations = created?.invitations;
+      const invitationStatus = invitations?.recipients
+        ? invitations.emailConfigured
+          ? invitations.sent
+            ? ` Professional email invitations were sent to ${invitations.sent} recipient${invitations.sent === 1 ? '' : 's'}.`
+            : ' Email delivery could not be completed, but in-app notifications are available.'
+          : ' In-app notifications were sent. Email delivery is not configured yet.'
+        : '';
+      setMessage((isLive ? 'Your Zoom meeting is ready. The selected batch has been notified and can join from their Classes page.' : `${sessionLabelTitle} scheduled and participants notified.`) + invitationStatus);
     } catch (error) {
       setMessageKind('error');
       setMessage(error.message);
