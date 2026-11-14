@@ -109,7 +109,9 @@ export const POST = authenticated(async (request, _context, actor, db) => {
       throw new ApiError(400, 'Use an HTTPS meeting URL.');
     }
   }
-  const result = await db.$transaction(async (tx) => {
+  let result;
+  try {
+    result = await db.$transaction(async (tx) => {
     const session = await tx.class_sessions.create({
       data: {
         batch_id: batchId,
@@ -148,7 +150,23 @@ export const POST = authenticated(async (request, _context, actor, db) => {
         })),
       });
     return { session, zoomMeeting: Boolean(meetingUuid), recipients: members.map((member) => member.users).filter(Boolean) };
-  });
+    });
+  } catch (error) {
+    // Zoom has already created a real meeting at this point. Do not invite the
+    // user to retry blindly: that would create a duplicate meeting.
+    if (meetingUuid && !error.status) {
+      console.error('Class persistence failed after Zoom meeting creation:', {
+        code: error.code || null,
+        name: error.name,
+        target: error.meta?.modelName || error.meta?.column || null,
+      });
+      throw new ApiError(
+        503,
+        'Zoom created the meeting, but CodeEmy could not save the class. Do not retry yet. Apply the latest Cloud SQL migration and database grants, then contact the administrator with this class title.',
+      );
+    }
+    throw error;
+  }
   const invitations = await sendClassInvitationEmails({
     students: result.recipients,
     mentor: batch.users,

@@ -80,10 +80,25 @@ export function errorResponse(error) {
     status = 404;
     message = 'Record not found.';
   }
+  if (error.code === 'P2021' || error.code === 'P2022') {
+    status = 503;
+    message =
+      'The LMS database update is pending. Apply the latest Cloud SQL migration, then try again.';
+  }
+  if (error.code === 'P1010') {
+    status = 503;
+    message =
+      'The LMS database user is missing permission for this workflow. Apply the latest Cloud SQL migration grants, then try again.';
+  }
   if (error.message === 'DATABASE_NOT_CONFIGURED') {
     status = 503;
     message = 'Database configuration is required.';
   }
-  if (!error.status) console.error('API request failed:', error.code || error.name);
+  if (!error.status)
+    console.error('API request failed:', {
+      code: error.code || null,
+      name: error.name,
+      target: error.meta?.modelName || error.meta?.column || null,
+    });
   return Response.json({ error: message }, { status, headers: { 'Cache-Control': 'no-store' } });
 }
