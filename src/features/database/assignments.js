@@ -5,8 +5,10 @@ import { useState, useEffect } from 'react';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
 import { api } from './api';
 import { uploadFile } from '@/lib/uploads';
-export default function DatabaseAssignments() {
+export default function DatabaseAssignments({ label = 'Assignment' }) {
   const { role } = useWorkspace();
+  const lowerLabel = label.toLowerCase();
+  const pluralLabel = label === 'Quiz' ? 'quizzes' : label === 'Task' ? 'tasks' : 'assignments';
   const [rows, setRows] = useState([]),
     [courses, setCourses] = useState([]),
     [batches, setBatches] = useState([]),
@@ -34,7 +36,7 @@ export default function DatabaseAssignments() {
       <p role="status">{message}</p>
       {role === 'Admin' && (
         <section className="card" style={{ padding: 24 }}>
-          <h2>Create assignment</h2>
+          <h2>Create {lowerLabel}</h2>
           <form
             className="auth-form"
             onSubmit={async (event) => {
@@ -47,7 +49,7 @@ export default function DatabaseAssignments() {
                 await api('/api/assignments', { method: 'POST', body: JSON.stringify(data) });
                 form.reset();
                 await refresh();
-                setMessage('Assignment saved.');
+                setMessage(`${label} saved.`);
               } catch (e) {
                 setMessage(e.message);
               } finally {
@@ -100,7 +102,7 @@ export default function DatabaseAssignments() {
               Deadline
               <input type="datetime-local" name="dueDate" />
             </label>
-            <button disabled={busy}>Create assignment</button>
+            <button disabled={busy}>Create {lowerLabel}</button>
           </form>
         </section>
       )}
@@ -131,7 +133,7 @@ export default function DatabaseAssignments() {
                     }),
                   });
                   await refresh();
-                  setMessage('Assignment submitted.');
+                  setMessage(`${label} submitted.`);
                 } catch (e) {
                   setMessage(e.message);
                 } finally {
@@ -147,7 +149,7 @@ export default function DatabaseAssignments() {
                 Attachment
                 <input name="file" type="file" />
               </label>
-              <button disabled={busy}>Submit assignment</button>
+              <button disabled={busy}>Submit {lowerLabel}</button>
             </form>
           )}
           {work.assignment_submissions.map((sub) => (
@@ -207,7 +209,7 @@ export default function DatabaseAssignments() {
           ))}
         </section>
       ))}
-      {!rows.length && !message && <p>No assignments yet.</p>}
+      {!rows.length && !message && <p>No {pluralLabel} yet.</p>}
     </>
   );
 }

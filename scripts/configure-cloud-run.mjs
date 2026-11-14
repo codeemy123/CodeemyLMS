@@ -209,6 +209,8 @@ const firebaseConfig = await response.json();
 const domains = [
   ...new Set([
     ...(firebaseConfig.authorizedDomains || []),
+    'lerno.codeemy.in',
+    'learnoin.netlify.app',
     'codeemy-lms-796236466632.asia-south1.run.app',
     'codeemy-lms-ro3s2c3rda-el.a.run.app',
   ]),

@@ -143,6 +143,8 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
           page:
             n.type === 'ASSESSMENT_REOPEN'
               ? 'Assessments'
+              : n.type === 'ANNOUNCEMENT'
+                ? 'Announcements'
               : role === 'Admin' && n.type === 'ACCOUNT_APPROVAL'
                 ? 'Account Approvals'
                 : 'Notifications',
@@ -829,10 +831,16 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
           {!(
             role === 'Admin' &&
             [
-              'Content',
+              'Prerecorded Modules',
+              'Manage Books',
+              'Study Materials',
+              'Live Classes',
+              'Webinars',
+              'Quiz',
+              'Manage Tasks',
+              '1:1 Consultations',
               'Projects',
               'Assessments',
-              'Question Bank',
               'Certificates',
               'Announcements',
               'Reports',
@@ -852,6 +860,8 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
               'Profile',
               'Notifications',
               'Assignments',
+              'Quiz',
+              'Manage Tasks',
               'Account Approvals',
               'Learning Materials',
               'Progress',
@@ -864,6 +874,12 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
               'Leaderboard',
               'Certificates',
               'Career',
+              'Live Classes',
+              'Webinars',
+              '1:1 Consultations',
+              'Prerecorded Modules',
+              'Manage Books',
+              'Study Materials',
             ].includes(page) && (
               <p role="status">
                 This workflow is still a preview. Changes here are not saved to the academy
@@ -914,6 +930,12 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
                 }[page]
               }
             />
+          ) : page === '1:1 Consultations' ? (
+            <DatabaseWorkflows
+              kind="queries"
+              title="1:1 Consultations"
+              description="Review learner and mentor support conversations, reply clearly, and mark requests resolved."
+            />
           ) : viewState === 'Loading' ? (
             <div className="card skeleton" aria-label="Loading content" />
           ) : viewState === 'Error' ? (
@@ -933,6 +955,10 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
             <div className="card skeleton" aria-label="Loading saved workspace" />
           ) : page === 'Assignments' ? (
             <DatabaseAssignments />
+          ) : page === 'Quiz' ? (
+            <DatabaseAssignments label="Quiz" />
+          ) : page === 'Manage Tasks' ? (
+            <DatabaseAssignments label="Task" />
           ) : page === 'Dashboard' ? (
             <DatabaseDashboard />
           ) : ['Students', 'Mentors'].includes(page) ? (
@@ -945,6 +971,10 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
             <DatabaseAttendance />
           ) : page === 'Classes' ? (
             <DatabaseClasses />
+          ) : page === 'Live Classes' ? (
+            <DatabaseClasses mode="live" />
+          ) : page === 'Webinars' ? (
+            <DatabaseClasses mode="webinar" />
           ) : (
             children
           )}

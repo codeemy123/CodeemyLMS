@@ -218,8 +218,9 @@ export const adminResources = {
         name: 'message',
         label: 'Message',
         type: 'textarea',
-        required: true,
+        required: false,
       },
+      { name: 'image_url', label: 'Poster image', type: 'url' },
       {
         name: 'course_id',
         label: 'Course (optional)',

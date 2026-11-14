@@ -1,0 +1,89 @@
+.announcement-poster {
+  margin: 20px 0;
+  max-width: 760px;
+}
+.announcement-card > p {
+  white-space: pre-wrap;
+}
+.announcement-poster a {
+  display: block;
+  background: #f6f5fc;
+  border: 1px solid #e3dff0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.announcement-poster img {
+  width: 100%;
+  height: auto;
+  min-height: 140px;
+  max-height: 620px;
+  object-fit: contain;
+  display: block;
+}
+.announcement-poster figcaption {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #68637b;
+  margin-top: 8px;
+}
+.announcement-poster-editor {
+  grid-column: 1/-1;
+  min-width: 0;
+  border: 1px dashed #cdc2e7;
+  border-radius: 16px;
+  padding: 22px;
+  background: #fcfbff;
+}
+.announcement-poster-editor legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #514275;
+  padding: 0 8px;
+}
+.announcement-poster-editor legend span {
+  font-weight: 400;
+  font-size: 14px;
+}
+.announcement-poster-preview {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 12px;
+  margin: 18px 0;
+}
+.announcement-upload-label {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.announcement-upload-label input {
+  width: 100%;
+  min-width: 0;
+}
+.announcement-published {
+  font-size: 14px;
+}
+[data-workspace-theme='dark'] .main :is(.announcement-poster a, .announcement-poster-editor) {
+  background: #1b2133;
+  border-color: #4d4268;
+}
+[data-workspace-theme='dark'] .main .announcement-poster-editor legend {
+  color: #d6c5ff;
+}
+[data-workspace-theme='dark'] .main .announcement-poster figcaption {
+  color: #bfc5d8;
+}
+@media (max-width: 600px) {
+  .announcement-poster-editor {
+    padding: 18px 14px;
+  }
+  .announcement-poster img {
+    max-height: 480px;
+  }
+}

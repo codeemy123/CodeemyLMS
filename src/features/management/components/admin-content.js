@@ -1,14 +1,18 @@
 'use client';
 import { useState } from 'react';
 import AdminCollection from './admin-collection';
-export default function AdminContent({ questions = false }) {
-  const [entity, setEntity] = useState(questions ? 'questions' : 'modules');
+export default function AdminContent({ questions = false, resourcesOnly = false, resourceLabel }) {
+  const [entity, setEntity] = useState(
+    questions ? 'questions' : resourcesOnly ? 'resources' : 'modules',
+  );
   const tabs = questions
     ? [
         ['questions', 'Questions'],
         ['options', 'Answer options'],
       ]
-    : [
+    : resourcesOnly
+      ? [['resources', resourceLabel || 'Learning resources']]
+      : [
         ['modules', 'Modules'],
         ['lessons', 'Lessons'],
         ['resources', 'Resources'],

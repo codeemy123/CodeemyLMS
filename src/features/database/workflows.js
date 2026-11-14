@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
+import AnnouncementPoster from '@/components/ui/announcement-poster';
 
-export default function DatabaseWorkflows({ kind }) {
+export default function DatabaseWorkflows({ kind, title, description }) {
   const { role } = useWorkspace();
   const [lessonId, setLessonId] = useState('');
   const [data, setData] = useState({ records: [] }),
@@ -27,6 +28,10 @@ export default function DatabaseWorkflows({ kind }) {
   }
   useEffect(() => {
     refresh();
+    if (kind === 'announcements') {
+      const timer = setInterval(refresh, 30000);
+      return () => clearInterval(timer);
+    }
   }, [kind]);
   async function send(body) {
     setBusy(true);
@@ -42,10 +47,16 @@ export default function DatabaseWorkflows({ kind }) {
   }
   return (
     <div className="database-workflows">
+      {title && (
+        <section className="card workflow-card workflow-intro">
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </section>
+      )}
       {message && <p role="status">{message}</p>}
       {kind === 'queries' && role === 'Student' && (
         <section className="card workflow-card">
-          <h2>Ask your mentor</h2>
+          <h2>{title || 'Ask your mentor'}</h2>
           <form
             className="auth-form"
             onSubmit={(e) => {
@@ -109,7 +120,12 @@ export default function DatabaseWorkflows({ kind }) {
       {data.records
         .filter((r) => kind !== 'progress' || r.id === lessonId)
         .map((r) => (
-          <article className="card workflow-card" key={r.id}>
+          <article
+            className={
+              'card workflow-card' + (kind === 'announcements' ? ' announcement-card' : '')
+            }
+            key={r.id}
+          >
             <h2>{r.title || r.subject}</h2>
             {kind === 'performance' && (
               <>
@@ -122,6 +138,18 @@ export default function DatabaseWorkflows({ kind }) {
               </>
             )}
             <p>{r.description || r.message}</p>
+            {kind === 'announcements' && (
+              <>
+                <AnnouncementPoster record={r} />
+                <p className="announcement-published">
+                  {r.published_at
+                    ? new Date(r.published_at).toLocaleString('en-IN', {
+                        timeZone: 'Asia/Kolkata',
+                      }) + ' IST'
+                    : ''}
+                </p>
+              </>
+            )}
             {kind === 'materials' && (
               <a href={r.file_url} target="_blank" rel="noreferrer">
                 Open learning material

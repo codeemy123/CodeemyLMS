@@ -3,6 +3,8 @@ import { requireActor } from './auth.js';
 import { assertOrigin, ApiError, uuid } from './api.js';
 import { getPrisma } from '@/lib/prisma';
 import { requireCourse, requireSession } from './data-access.js';
+import { announcementScope } from './announcement-access.js';
+import { announcementContent } from '../announcement-content.js';
 export async function uploadActor(request) {
   assertOrigin(request);
   const actor = await requireActor(request);
@@ -24,6 +26,16 @@ export async function authorizeObject(request, key, write = false) {
   });
   if (!record) throw new ApiError(404, 'File is not registered.');
   if (actor.id === record.user_id || actor.role === 'ADMIN') return actor;
+  if (!write) {
+    const announcements = await db.announcements.findMany({
+      where: {
+        AND: [await announcementScope(db, actor), { message: { contains: objectUrl(key) } }],
+      },
+      select: { message: true },
+    });
+    if (announcements.some((a) => announcementContent(a.message).image_url === objectUrl(key)))
+      return actor;
+  }
   if (!write && record.details?.classId && record.entity_type === 'zoom_recording') {
     await requireSession(db, actor, record.details.classId);
     const recording = await db.zoom_recordings.findFirst({

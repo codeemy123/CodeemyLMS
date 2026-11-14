@@ -47,6 +47,7 @@ export const navigation = {
     ['Mentor', Users],
     ['Certificates', Award],
     ['Career', BriefcaseBusiness],
+    ['Announcements', Megaphone],
     ['Notifications', Bell],
     ['Profile', User],
   ],
@@ -67,17 +68,13 @@ export const navigation = {
   ],
   Admin: [
     ['Dashboard', LayoutDashboard],
+    ['Courses', BookOpen],
     ['Students', Users],
     ['Mentors', GraduationCap],
     ['Account Approvals', ShieldCheck],
-    ['Courses', BookOpen],
     ['Batches', Layers],
-    ['Classes', CalendarDays],
     ['Attendance', Check],
-    ['Content', FileText],
-    ['Assignments', ClipboardList],
     ['Assessments', ListChecks],
-    ['Question Bank', ListChecks],
     ['Projects', FolderKanban],
     ['Certificates', Award],
     ['Career', BriefcaseBusiness],
@@ -88,3 +85,20 @@ export const navigation = {
     ['Audit Log', Activity],
   ],
 };
+
+// Admin learning operations are intentionally grouped so that the main
+// navigation stays short while all learning-delivery tools are one click away.
+export const adminLearningManager = [
+  ['Live Classes', CalendarDays],
+  ['Prerecorded Modules', Play],
+  ['Manage Books', BookOpen],
+  ['Study Materials', FileText],
+  ['Quiz', ClipboardList],
+  ['Manage Tasks', ListChecks],
+  ['Webinars', CalendarDays],
+  ['1:1 Consultations', MessageSquare],
+];
+
+export function getNavigationPages(role) {
+  return role === 'Admin' ? [...navigation.Admin, ...adminLearningManager] : navigation[role];
+}

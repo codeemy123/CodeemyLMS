@@ -48,6 +48,33 @@ try {
         data: { name: marker, course_id: course.id, mentor_id: mentor.id },
       });
       await tx.batch_members.create({ data: { batch_id: batch.id, student_id: student.id } });
+      const notice = await tx.announcements.create({
+        data: {
+          title: marker,
+          message: 'Assigned batch notice',
+          course_id: course.id,
+          batch_id: batch.id,
+          published_at: new Date(Date.now() - 1000),
+        },
+      });
+      const draft = await tx.announcements.create({
+        data: {
+          title: marker + '-draft',
+          message: 'Not published',
+          course_id: course.id,
+          batch_id: batch.id,
+        },
+      });
+      assert.ok(
+        (await workflowRead(tx, mentor, 'announcements')).records.some((r) => r.id === notice.id),
+      );
+      assert.ok(
+        !(await workflowRead(tx, mentor, 'announcements')).records.some((r) => r.id === draft.id),
+      );
+      assert.ok(
+        !(await workflowRead(tx, other, 'announcements')).records.some((r) => r.id === notice.id),
+      );
+      console.log('PASS published announcements reach assigned Mentor only; drafts stay hidden');
       const module = await tx.course_modules.create({
         data: { course_id: course.id, title: 'Module' },
       });
@@ -138,8 +165,6 @@ try {
       });
       const started = await startAttempt(tx, student, assessment.id);
       assert.equal(Object.hasOwn(started.questions[0].question_options[0], 'is_correct'), false);
-      const resumed = await startAttempt(tx, student, assessment.id);
-      assert.equal(started.attempt.id, resumed.attempt.id);
       await assert.rejects(startAttempt(tx, other, assessment.id), (e) => e.status === 404);
       const result = await finishAttempt(tx, student, started.attempt.id, {
         answers: [{ questionId: question.id, selectedOptionIds: [option.id] }],
@@ -147,6 +172,9 @@ try {
       });
       assert.equal(Number(result.attempt.score), 10);
       assert.equal(result.attempt.status, 'EVALUATED');
+      const closed = await startAttempt(tx, student, assessment.id);
+      assert.equal(started.attempt.id, closed.attempt.id);
+      assert.equal(Number(closed.attempt.score), 10);
       assert.equal(
         Number(
           (await finishAttempt(tx, student, started.attempt.id, { submit: true, answers: [] }))

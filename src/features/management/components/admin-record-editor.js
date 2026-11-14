@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { X, Pencil, Trash2, Save } from 'lucide-react';
+import { X, Pencil, Trash2, Save, ImagePlus } from 'lucide-react';
 import { adminResources } from '@/config/admin-resources';
 import { api } from '@/features/database/api';
 import { uploadFile } from '@/lib/uploads';
@@ -16,6 +16,7 @@ function inputValue(field, value) {
 }
 export function AdminRecordForm({ entity, record, onSaved, onCancel }) {
   const config = adminResources[entity];
+  const [poster, setPoster] = useState(record?.image_url || '');
   const [lookupReady, setLookupReady] = useState(
     !config.fields.some((field) => field.type === 'reference'),
   );
@@ -64,65 +65,131 @@ export function AdminRecordForm({ entity, record, onSaved, onCancel }) {
         }
       }}
     >
-      {config.fields.map((field) => (
-        <label key={field.name}>
-          {field.label}
-          {field.type === 'reference' ? (
-            <select
-              aria-label={field.label}
-              name={field.name}
-              value={references[field.name] || ''}
-              onChange={(event) =>
-                setReferences((current) => ({ ...current, [field.name]: event.target.value }))
-              }
-              required={field.required}
-            >
-              <option value="">Choose {field.label.toLowerCase()}</option>
-              {(options[field.source] || []).map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.title}
-                </option>
-              ))}
-            </select>
-          ) : field.type === 'select' ? (
-            <select
-              aria-label={field.label}
-              name={field.name}
-              defaultValue={record?.[field.name] || field.options[0]}
-            >
-              {field.options.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </select>
-          ) : field.type === 'textarea' ? (
-            <textarea
-              aria-label={field.label}
-              name={field.name}
-              defaultValue={record?.[field.name] || ''}
-              rows={3}
-              required={field.required}
-              maxLength={20000}
-            />
-          ) : field.type === 'checkbox' ? (
-            <input name={field.name} type="checkbox" defaultChecked={!!record?.[field.name]} />
-          ) : (
+      {config.fields
+        .filter((field) => field.name !== 'image_url')
+        .map((field) => (
+          <label key={field.name}>
+            {field.label}
+            {field.type === 'reference' ? (
+              <select
+                aria-label={field.label}
+                name={field.name}
+                value={references[field.name] || ''}
+                onChange={(event) =>
+                  setReferences((current) => ({ ...current, [field.name]: event.target.value }))
+                }
+                required={field.required}
+              >
+                <option value="">Choose {field.label.toLowerCase()}</option>
+                {(options[field.source] || []).map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.title}
+                  </option>
+                ))}
+              </select>
+            ) : field.type === 'select' ? (
+              <select
+                aria-label={field.label}
+                name={field.name}
+                defaultValue={record?.[field.name] || field.options[0]}
+              >
+                {field.options.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
+              </select>
+            ) : field.type === 'textarea' ? (
+              <textarea
+                aria-label={field.label}
+                name={field.name}
+                defaultValue={record?.[field.name] || ''}
+                rows={3}
+                required={field.required}
+                maxLength={20000}
+              />
+            ) : field.type === 'checkbox' ? (
+              <input name={field.name} type="checkbox" defaultChecked={!!record?.[field.name]} />
+            ) : (
+              <input
+                aria-label={field.label}
+                name={field.name}
+                type={field.type === 'url' ? 'text' : field.type}
+                defaultValue={inputValue(field, record?.[field.name])}
+                required={field.required}
+                min={field.min}
+                max={field.type === 'number' ? field.max : undefined}
+                step={field.type === 'number' ? 'any' : undefined}
+                maxLength={field.type === 'text' ? field.max || 255 : undefined}
+              />
+            )}
+          </label>
+        ))}
+      {entity === 'announcements' && (
+        <fieldset className="announcement-poster-editor">
+          <legend>
+            <ImagePlus size={18} /> Poster / image <span>(optional)</span>
+          </legend>
+          <input type="hidden" name="image_url" value={poster} />
+          <p>Publish a text message, a poster, or both. PNG, JPG, WebP or GIF, up to 10 MB.</p>
+          <label className="announcement-upload-label">
+            Upload poster image
             <input
-              aria-label={field.label}
-              name={field.name}
-              type={field.type === 'url' ? 'text' : field.type}
-              defaultValue={inputValue(field, record?.[field.name])}
-              required={field.required}
-              min={field.min}
-              max={field.type === 'number' ? field.max : undefined}
-              step={field.type === 'number' ? 'any' : undefined}
-              maxLength={field.type === 'text' ? field.max || 255 : undefined}
+              aria-label="Upload poster image"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              disabled={busy}
+              onChange={async (event) => {
+                const input = event.currentTarget,
+                  file = input.files?.[0];
+                if (!file) return;
+                if (
+                  !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type) ||
+                  file.size > 10485760
+                ) {
+                  setMessage('Choose a PNG, JPG, WebP or GIF up to 10 MB.');
+                  input.value = '';
+                  return;
+                }
+                setBusy(true);
+                setMessage('Uploading poster…');
+                try {
+                  const result = await uploadFile(file);
+                  setPoster(result.data);
+                  setMessage('Poster uploaded. Save the announcement to publish it.');
+                } catch (error) {
+                  setMessage(error.message);
+                } finally {
+                  setBusy(false);
+                  input.value = '';
+                }
+              }}
             />
+          </label>
+          {poster && (
+            <>
+              <img
+                className="announcement-poster-preview"
+                src={poster}
+                alt="Announcement poster preview"
+              />
+              <button
+                type="button"
+                className="btn secondary"
+                disabled={busy}
+                onClick={() => setPoster('')}
+              >
+                <Trash2 size={15} /> Remove poster
+              </button>
+            </>
           )}
-        </label>
-      ))}
+        </fieldset>
+      )}
       {config.fields
         .filter(
-          (field) => field.type === 'url' && field.name !== 'meeting_url' && entity !== 'careers',
+          (field) =>
+            field.type === 'url' &&
+            field.name !== 'meeting_url' &&
+            field.name !== 'image_url' &&
+            entity !== 'careers',
         )
         .map((field) => (
           <label key={'upload-' + field.name} className="admin-record-upload">

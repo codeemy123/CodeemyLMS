@@ -1,7 +1,19 @@
 import { ApiError, text, uuid, numeric, roleAllowed } from './api.js';
 import { courseScope, requireCourse, evaluateSubmission } from './data-access.js';
+import { presentAnnouncement } from '../announcement-content.js';
+import { announcementScope } from './announcement-access.js';
 
 export async function workflowRead(db, actor, kind) {
+  if (kind === 'announcements') {
+    return {
+      records: (
+        await db.announcements.findMany({
+          where: await announcementScope(db, actor),
+          orderBy: { published_at: 'desc' },
+        })
+      ).map(presentAnnouncement),
+    };
+  }
   const courses = await db.courses.findMany({ where: courseScope(actor), select: { id: true } });
   const ids = courses.map((c) => c.id);
   const mentorRoster =
@@ -34,32 +46,6 @@ export async function workflowRead(db, actor, kind) {
         orderBy: { created_at: 'desc' },
       }),
     };
-  if (kind === 'announcements') {
-    const batches = await db.batches.findMany({
-      where:
-        actor.role === 'ADMIN'
-          ? {}
-          : actor.role === 'MENTOR'
-            ? { mentor_id: actor.id }
-            : { batch_members: { some: { student_id: actor.id } } },
-      select: { id: true },
-    });
-    return {
-      records: await db.announcements.findMany({
-        where:
-          actor.role === 'ADMIN'
-            ? {}
-            : {
-                published_at: { lte: new Date() },
-                AND: [
-                  { OR: [{ course_id: null }, { course_id: { in: ids } }] },
-                  { OR: [{ batch_id: null }, { batch_id: { in: batches.map((b) => b.id) } }] },
-                ],
-              },
-        orderBy: { published_at: 'desc' },
-      }),
-    };
-  }
   if (kind === 'projects') {
     const records = await db.projects.findMany({
       where: scoped,

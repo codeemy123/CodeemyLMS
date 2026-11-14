@@ -6,8 +6,11 @@ import { CalendarDays, Plus, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
-export default function DatabaseClasses() {
+export default function DatabaseClasses({ mode = 'class' }) {
   const { role, go } = useWorkspace();
+  const sessionLabel = mode === 'webinar' ? 'webinar' : mode === 'live' ? 'live class' : 'class';
+  const sessionLabelTitle = sessionLabel[0].toUpperCase() + sessionLabel.slice(1);
+  const sessionLabelPlural = mode === 'webinar' ? 'webinars' : mode === 'live' ? 'live classes' : 'classes';
   const [loading, setLoading] = useState(true),
     [batchesLoading, setBatchesLoading] = useState(role === 'Admin');
   const [batches, setBatches] = useState([]);
@@ -34,10 +37,10 @@ export default function DatabaseClasses() {
           <CalendarDays size={25} />
         </span>
         <div>
-          <h2>{role === 'Admin' ? 'Schedule and manage classes' : 'Your classes'}</h2>
+          <h2>{role === 'Admin' ? `Schedule and manage ${sessionLabelPlural}` : 'Your classes'}</h2>
           <p>
             {role === 'Admin'
-              ? 'Plan a session, choose its batch and share the meeting link.'
+              ? `Plan a ${sessionLabel}, choose its batch and share the meeting link.`
               : 'Your assigned classroom sessions and recordings, in one place.'}
           </p>
         </div>
@@ -55,7 +58,7 @@ export default function DatabaseClasses() {
               await api('/api/class-sessions', { method: 'POST', body: JSON.stringify(data) });
               setSessions((await api('/api/class-sessions')).sessions);
               form.reset();
-              setMessage('Class scheduled and participants notified.');
+              setMessage(`${sessionLabelTitle} scheduled and participants notified.`);
             } catch (e) {
               setMessage(e.message);
             } finally {
@@ -64,7 +67,7 @@ export default function DatabaseClasses() {
           }}
         >
           <label>
-            Class title
+            {sessionLabelTitle} title
             <input name="title" required maxLength={255} placeholder="e.g. Python fundamentals" />
           </label>
           <label>
@@ -109,7 +112,7 @@ export default function DatabaseClasses() {
               disabled={busy || batchesLoading || !batches.length}
             >
               <Plus size={17} />
-              {busy ? 'Scheduling…' : 'Schedule class'}
+              {busy ? 'Scheduling…' : `Schedule ${sessionLabel}`}
             </button>
           </div>
         </form>
@@ -120,10 +123,10 @@ export default function DatabaseClasses() {
         </p>
       )}
       <div className="class-list-heading">
-        <h3>Scheduled classes</h3>
+        <h3>Scheduled {sessionLabelPlural}</h3>
         <span>{sessions.length} sessions</span>
       </div>
-      {loading && <p role="status">Loading classes…</p>}
+      {loading && <p role="status">Loading {sessionLabelPlural}…</p>}
       {sessions.map((session) => (
         <article className="class-session-card" key={session.id}>
           <div>
@@ -154,10 +157,10 @@ export default function DatabaseClasses() {
       {!loading && !sessions.length && (
         <div className="class-empty">
           <CalendarDays size={32} />
-          <h3>No classes scheduled yet</h3>
+          <h3>No {sessionLabelPlural} scheduled yet</h3>
           <p>
             {role === 'Admin'
-              ? 'Your sessions will appear here after you schedule a class.'
+              ? `Your sessions will appear here after you schedule a ${sessionLabel}.`
               : 'Your academy will share upcoming sessions here.'}
           </p>
         </div>

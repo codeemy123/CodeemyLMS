@@ -2,8 +2,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
-import { LogOut } from 'lucide-react';
-import { navigation } from '@/config/navigation';
+import { ChevronDown, LogOut } from 'lucide-react';
+import { adminLearningManager, navigation } from '@/config/navigation';
 import { workspaceHref } from '@/lib/routes';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
 function NavigationLink({ onNavigate, children, eager = false, ...props }) {
@@ -24,6 +24,7 @@ function NavigationLink({ onNavigate, children, eager = false, ...props }) {
 export default function Sidebar() {
   const { role, page, mobile, unreadCount, approvalCount, go, changeRole, signOut } =
     useWorkspace();
+  const [learningOpen, setLearningOpen] = useState(true);
   return (
     <aside className={'sidebar ' + (mobile ? 'open' : '')}>
       <NavigationLink
@@ -47,26 +48,59 @@ export default function Sidebar() {
       <div className="workspace">{role.toUpperCase()} WORKSPACE</div>
       <nav className="nav" aria-label={role + ' navigation'}>
         {navigation[role].map(([n, Icon]) => (
-          <NavigationLink
-            key={n}
-            eager={['My Courses', 'Courses', 'Assignments'].includes(n)}
-            href={workspaceHref(role, n)}
-            className={page === n ? 'active' : ''}
-            aria-current={page === n ? 'page' : undefined}
-            onNavigate={(e) => {
-              e.preventDefault();
-              go(n);
-            }}
-          >
-            <Icon size={17} />
-            {n}
-            {n === 'Account Approvals' && approvalCount > 0 && (
-              <span className="nav-count">{approvalCount}</span>
+          <div key={n}>
+            <NavigationLink
+              eager={['My Courses', 'Courses', 'Assignments'].includes(n)}
+              href={workspaceHref(role, n)}
+              className={page === n ? 'active' : ''}
+              aria-current={page === n ? 'page' : undefined}
+              onNavigate={(e) => {
+                e.preventDefault();
+                go(n);
+              }}
+            >
+              <Icon size={17} />
+              {n}
+              {n === 'Account Approvals' && approvalCount > 0 && (
+                <span className="nav-count">{approvalCount}</span>
+              )}
+              {n === 'Notifications' && unreadCount > 0 && (
+                <span className="nav-count">{unreadCount}</span>
+              )}
+            </NavigationLink>
+            {role === 'Admin' && n === 'Courses' && (
+              <div className="learning-manager">
+                <button
+                  type="button"
+                  className="learning-manager-toggle"
+                  aria-expanded={learningOpen}
+                  onClick={() => setLearningOpen((open) => !open)}
+                >
+                  <span>Learning Manager</span>
+                  <ChevronDown size={16} className={learningOpen ? 'open' : ''} />
+                </button>
+                {learningOpen && (
+                  <div className="learning-manager-links">
+                    {adminLearningManager.map(([label, ManagerIcon]) => (
+                      <NavigationLink
+                        key={label}
+                        href={workspaceHref(role, label)}
+                        className={page === label ? 'active' : ''}
+                        aria-current={page === label ? 'page' : undefined}
+                        onNavigate={(event) => {
+                          event.preventDefault();
+                          go(label);
+                        }}
+                      >
+                        <ManagerIcon size={15} />
+                        {label}
+                      </NavigationLink>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
-            {n === 'Notifications' && unreadCount > 0 && (
-              <span className="nav-count">{unreadCount}</span>
-            )}
-          </NavigationLink>
+          </div>
         ))}
       </nav>
       <div className="sidebar-bottom">

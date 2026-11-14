@@ -48,7 +48,7 @@ export default function ClassRecordings({ classId }) {
         method: 'POST',
         body: JSON.stringify({ classId, ...body }),
       });
-      setMessage('Recording updated.');
+      setMessage('Recording connected. It will be published to the assigned batch automatically.');
       await refresh();
     } catch (e) {
       setMessage(e.message);
@@ -108,12 +108,20 @@ export default function ClassRecordings({ classId }) {
         <div key={r.id}>
           <p>{r.status.replaceAll('_', ' ')}</p>
           {r.url ? (
-            <video style={{ width: '100%', maxHeight: 400 }} controls preload="none" src={r.url} />
+            <video
+              style={{ width: '100%', maxHeight: 400 }}
+              controls
+              controlsList={role === 'Student' ? 'nodownload noremoteplayback' : undefined}
+              disablePictureInPicture={role === 'Student'}
+              onContextMenu={role === 'Student' ? (event) => event.preventDefault() : undefined}
+              preload="metadata"
+              src={r.url}
+            />
           ) : (
             role !== 'Student' &&
-            ['WAITING_PUBLISH', 'FAILED'].includes(r.status) && (
+            ['FAILED'].includes(r.status) && (
               <button disabled={busy} onClick={() => save({ action: 'publish', id: r.id })}>
-                {r.status === 'FAILED' ? 'Retry publish' : 'Publish to students'}
+                Retry automatic publish
               </button>
             )
           )}

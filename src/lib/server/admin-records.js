@@ -2,6 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { adminResources } from '../../config/admin-resources.js';
 import { ApiError, text, uuid, choice, roleAllowed } from './api.js';
 import { validObjectSignature } from './r2.js';
+import {
+  announcementContent,
+  encodeAnnouncement,
+  presentAnnouncement,
+} from '../announcement-content.js';
 export function resourceConfig(entity) {
   const config = Object.hasOwn(adminResources, entity) && adminResources[entity];
   if (!config) throw new ApiError(404, 'Unknown editable resource.');
@@ -163,7 +168,9 @@ async function publishAnnouncement(tx, actor, announcement) {
       data: people.map((user) => ({
         user_id: user.id,
         title: announcement.title,
-        message: announcement.message,
+        message:
+          announcementContent(announcement.message).message ||
+          'A new poster has been published. Open Announcements to view it.',
         type: 'ANNOUNCEMENT',
         reference_id: announcement.id,
       })),
@@ -204,6 +211,36 @@ export async function saveAdminRecord(db, actor, entity, id, body) {
         }
       }
       const combined = { ...existing, ...changes };
+      if (entity === 'announcements') {
+        const prior = announcementContent(existing?.message);
+        const message = changes.message !== undefined ? changes.message : prior.message;
+        const image = changes.image_url !== undefined ? changes.image_url : prior.image_url;
+        if (!message?.trim() && !image)
+          throw new ApiError(400, 'Add a message or upload a poster.');
+        if (image) {
+          const url = new URL(image, 'http://stored-file.local');
+          if (url.origin !== 'http://stored-file.local' || url.pathname !== '/api/storage/object')
+            throw new ApiError(400, 'Upload a poster image to CodeEmy storage.');
+          const file = await tx.audit_logs.findFirst({
+            where: {
+              action: 'FILE_UPLOADED',
+              details: { path: ['key'], equals: url.searchParams.get('key') },
+            },
+          });
+          if (
+            !file ||
+            !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.details?.type) ||
+            file.details.size > 10485760 ||
+            file.details.courseId
+          )
+            throw new ApiError(
+              400,
+              'Upload a PNG, JPG, WebP or GIF up to 10 MB using the announcement poster uploader.',
+            );
+        }
+        delete changes.image_url;
+        changes.message = encodeAnnouncement(message, image);
+      }
       if (
         id &&
         entity === 'batches' &&
@@ -307,7 +344,7 @@ export async function saveAdminRecord(db, actor, entity, id, body) {
           },
         },
       });
-      return { record };
+      return { record: entity === 'announcements' ? presentAnnouncement(record) : record };
     },
     { timeout: 30000 },
   );

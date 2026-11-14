@@ -44,7 +44,11 @@ export const POST = authenticated(async (request, _context, actor, db) => {
       update: {},
     });
     await discoverRecordings(db, meetingUuid);
-    return { synced: true };
+    await db.zoom_recordings.updateMany({
+      where: { meeting_uuid: meetingUuid, status: 'WAITING_PUBLISH' },
+      data: { status: 'QUEUED', updated_at: new Date() },
+    });
+    return { synced: true, queued: true };
   }
   if (body.action !== 'publish') throw new ApiError(400, 'Invalid recording action.');
   const changed = await db.zoom_recordings.updateMany({

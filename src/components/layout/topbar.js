@@ -1,6 +1,6 @@
 'use client';
 import { Bell, Menu, X, Search, ChevronDown } from 'lucide-react';
-import { navigation } from '@/config/navigation';
+import { getNavigationPages } from '@/config/navigation';
 import ThemeToggle from './theme-toggle';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
 export default function Topbar() {
@@ -25,10 +25,10 @@ export default function Topbar() {
           onSubmit={(e) => {
             e.preventDefault();
             const val = new FormData(e.currentTarget).get('search');
-            const found = navigation[role].find(([n]) =>
+            const found = getNavigationPages(role).find(([n]) =>
               n.toLowerCase().includes(String(val).toLowerCase()),
             );
-            found ? go(found[0]) : notify('No page found. Try courses, classes or assignments.');
+            found ? go(found[0]) : notify('No page found. Try courses, live classes or quiz.');
           }}
         >
           <Search size={16} aria-hidden="true" />

@@ -4,6 +4,7 @@ import { Plus, Search } from 'lucide-react';
 import { adminResources } from '@/config/admin-resources';
 import { api } from '@/features/database/api';
 import AdminRecordActions, { AdminRecordForm } from './admin-record-editor';
+import AnnouncementPoster from '@/components/ui/announcement-poster';
 export default function AdminCollection({ entity }) {
   const config = adminResources[entity];
   const [records, setRecords] = useState([]),
@@ -73,6 +74,7 @@ export default function AdminCollection({ entity }) {
                 record.certificate_number}
             </h2>
             <p>{record.description || record.message || record.instructions || ''}</p>
+            {entity === 'announcements' && <AnnouncementPoster record={record} />}
             {record.status && <span className="badge">{record.status}</span>}
             {record.question_type && <span className="badge">{record.question_type}</span>}
             {entity === 'options' && (

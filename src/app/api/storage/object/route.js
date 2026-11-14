@@ -1,6 +1,7 @@
 import { authorizeObject } from '@/lib/server/storage-access';
 import { errorResponse } from '@/lib/server/api';
 import { validObjectSignature, r2Request } from '@/lib/server/r2';
+import { getPrisma } from '@/lib/prisma';
 export const runtime = 'nodejs';
 export async function GET(request) {
   try {
@@ -8,7 +9,25 @@ export async function GET(request) {
       key = url.searchParams.get('key');
     if (!validObjectSignature(key, url.searchParams.get('signature')))
       return new Response('Invalid file access link.', { status: 403 });
-    await authorizeObject(request, key, request.method === 'DELETE');
+    const actor = await authorizeObject(request, key, request.method === 'DELETE');
+    // A class recording is deliberately playback-only for learners.  Its URL is
+    // still range-enabled for the video element, but a learner cannot turn that
+    // same authenticated URL into a download attachment.
+    if (url.searchParams.get('download') === '1' && actor.role === 'STUDENT') {
+      const recordingAudit = await getPrisma().audit_logs.findFirst({
+        where: {
+          action: 'FILE_UPLOADED',
+          entity_type: 'zoom_recording',
+          details: { path: ['key'], equals: key },
+        },
+        orderBy: { created_at: 'desc' },
+        select: { id: true },
+      });
+      if (recordingAudit)
+        return new Response('Class recordings are available for online viewing only.', {
+          status: 403,
+        });
+    }
     const range = request.headers.get('range');
     if (range && !/^bytes=\d*-\d*$/.test(range))
       return new Response('Invalid range.', { status: 416 });
@@ -43,6 +62,7 @@ export async function DELETE(request) {
       key = url.searchParams.get('key');
     if (!validObjectSignature(key, url.searchParams.get('signature')))
       return new Response('Invalid file access link.', { status: 403 });
+    await authorizeObject(request, key, true);
     const response = await r2Request('DELETE', key);
     return response.ok
       ? new Response(null, { status: 204 })
