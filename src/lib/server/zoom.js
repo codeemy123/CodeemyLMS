@@ -59,6 +59,11 @@ export async function zoomRequest(path, { method = 'GET', body } = {}) {
   }
   if (!response.ok) {
     const detail = typeof data?.message === 'string' ? ` ${data.message}` : '';
+    if (/does not contain scopes/i.test(detail) && /meeting\.write/i.test(detail))
+      throw new ApiError(
+        502,
+        'Zoom meeting creation is not permitted yet. In Zoom Marketplace, add the “View and manage all user meetings” (meeting:write:admin) scope to the CodeEmy LMS Recordings app, then activate the app again.',
+      );
     throw new ApiError(502, `Zoom request could not be completed.${detail}`);
   }
   return data;

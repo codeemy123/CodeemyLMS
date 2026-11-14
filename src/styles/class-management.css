@@ -190,13 +190,24 @@
   min-height: 46px;
 }
 .class-notice {
-  padding: 14px 18px;
-  border: 1px solid #dcd4ef;
-  background: #f6f2ff;
-  border-radius: 12px;
-  margin-top: 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 18px;
+  border: 1px solid #b7e4cc;
+  background: #effcf4;
+  border-radius: 14px;
+  margin: 0 0 22px;
+  color: #14532d;
   overflow-wrap: anywhere;
 }
+.class-notice strong { display: block; font-size: 15px; }
+.class-notice p { margin: 4px 0 0; font-size: 14px; line-height: 1.5; }
+.class-notice button { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 8px; color: inherit; background: transparent; cursor: pointer; }
+.class-notice button:hover { background: rgb(20 83 45 / 10%); }
+.class-notice--error { border-color: #fecaca; background: #fff3f2; color: #b42318; }
+.class-notice--error button:hover { background: rgb(180 35 24 / 10%); }
 .live-calendar {
   margin: 0 0 28px;
   overflow: hidden;
@@ -516,6 +527,8 @@
   line-height: 1.5;
   background: #eff6ff;
 }
+.drawer-inline-notice--error { border-color: #fecaca; color: #9f1f18; background: #fff5f3; }
+.drawer-inline-notice--error p { margin: 6px 0 0; }
 .selected-batch-note svg { flex: 0 0 auto; margin-top: 2px; color: #2563eb; }
 .selected-batch-note strong { color: #163b70; }
 .tag-input { display: flex; align-items: center; gap: 9px; min-height: 50px; padding: 0 13px; }

@@ -37,6 +37,7 @@ export default function DatabaseClasses({ mode = 'class' }) {
   const [sessions, setSessions] = useState([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageKind, setMessageKind] = useState('success');
   const [showForm, setShowForm] = useState(!isLive);
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState('');
@@ -50,12 +51,18 @@ export default function DatabaseClasses({ mode = 'class' }) {
     if (role !== 'Admin') return;
     api('/api/batches')
       .then((data) => setBatches(data.batches))
-      .catch((error) => setMessage(error.message))
+      .catch((error) => {
+        setMessageKind('error');
+        setMessage(error.message);
+      })
       .finally(() => setBatchesLoading(false));
   }, [role]);
 
   useEffect(() => {
-    refreshSessions().catch((error) => setMessage(error.message)).finally(() => setLoading(false));
+    refreshSessions().catch((error) => {
+      setMessageKind('error');
+      setMessage(error.message);
+    }).finally(() => setLoading(false));
   }, []);
 
   const visibleSessions = useMemo(
@@ -83,8 +90,8 @@ export default function DatabaseClasses({ mode = 'class' }) {
 
   const selectedBatch = batches.find((batch) => batch.id === selectedBatchId);
 
-  const closeLiveForm = () => {
-    if (busy) return;
+  const closeLiveForm = (force = false) => {
+    if (busy && !force) return;
     setShowForm(false);
     setSelectedDate('');
     setSelectedBatchId('');
@@ -96,6 +103,7 @@ export default function DatabaseClasses({ mode = 'class' }) {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
+      setMessageKind('error');
       setMessage('Choose a PNG, JPG, WebP or GIF image smaller than 5 MB.');
       event.target.value = '';
       return;
@@ -109,6 +117,7 @@ export default function DatabaseClasses({ mode = 'class' }) {
     const form = event.currentTarget;
     const data = Object.fromEntries(new FormData(form));
     setBusy(true);
+    setMessage('');
     try {
       if (isLive) {
         const start = new Date(`${data.startDate}T${data.startTime}`);
@@ -133,9 +142,11 @@ export default function DatabaseClasses({ mode = 'class' }) {
       await api('/api/class-sessions', { method: 'POST', body: JSON.stringify(data) });
       await refreshSessions();
       form.reset();
-      if (isLive) closeLiveForm();
-      setMessage(isLive ? 'Zoom class scheduled and the batch has been notified.' : `${sessionLabelTitle} scheduled and participants notified.`);
+      if (isLive) closeLiveForm(true);
+      setMessageKind('success');
+      setMessage(isLive ? 'Your Zoom meeting is ready. The selected batch has been notified and can join from their Classes page.' : `${sessionLabelTitle} scheduled and participants notified.`);
     } catch (error) {
+      setMessageKind('error');
       setMessage(error.message);
     } finally {
       setBusy(false);
@@ -157,6 +168,16 @@ export default function DatabaseClasses({ mode = 'class' }) {
           </p>
         </div>
       </div>
+
+      {message && (
+        <div className={`class-notice class-notice--${messageKind}`} role={messageKind === 'error' ? 'alert' : 'status'} aria-live="polite">
+          <div>
+            <strong>{messageKind === 'success' ? `${sessionLabelTitle} created successfully` : `Could not schedule ${sessionLabel}`}</strong>
+            <p>{message}</p>
+          </div>
+          <button type="button" onClick={() => setMessage('')} aria-label="Dismiss notification"><X size={18} /></button>
+        </div>
+      )}
 
       {role === 'Admin' && isLive && (
         <div className="live-calendar" aria-label="Live classes calendar">
@@ -242,13 +263,13 @@ export default function DatabaseClasses({ mode = 'class' }) {
               <label className="live-field full">Zoom host email <span>(optional)</span><input type="email" name="hostEmail" placeholder="Uses the selected batch mentor by default" /><small>The host must have an assigned Zoom Pro licence in your organization.</small></label>
               {batchesLoading && <p className="drawer-inline-notice" role="status">Loading student batches…</p>}
               {!batchesLoading && !batches.length && <div className="drawer-inline-notice"><p>Create a batch before scheduling its first class.</p><button type="button" className="btn secondary" onClick={() => { closeLiveForm(); go('Batches'); }}>Manage batches</button></div>}
+              {message && messageKind === 'error' && <div className="drawer-inline-notice drawer-inline-notice--error" role="alert"><div><strong>Zoom meeting was not created.</strong><p>{message}</p></div></div>}
               <footer className="live-class-form-footer"><p><Clock3 size={17} /> Zoom cloud recording is enabled automatically. Only the selected batch can join and later watch it in CodeEmy.</p><button className="btn" type="submit" disabled={busy || batchesLoading || !batches.length}><Plus size={17} /> {busy ? 'Creating Zoom class…' : 'Create class & Zoom meeting'}</button></footer>
             </form>
           </aside>
         </div>
       )}
 
-      {message && <p className="class-notice" role="status">{message}</p>}
       <div className="class-list-heading"><h3>Scheduled {sessionLabelPlural}</h3><span>{visibleSessions.length} sessions</span></div>
       {loading && <p role="status">Loading {sessionLabelPlural}…</p>}
       {visibleSessions.map((session) => (
