@@ -39,14 +39,32 @@ export async function zoomToken() {
   };
   return cached.value;
 }
-export async function zoomApi(path) {
+export async function zoomRequest(path, { method = 'GET', body } = {}) {
   const response = await fetch('https://api.zoom.us/v2' + path, {
-    headers: { Authorization: 'Bearer ' + (await zoomToken()) },
+    method,
+    headers: {
+      Authorization: 'Bearer ' + (await zoomToken()),
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     redirect: 'error',
     signal: AbortSignal.timeout(20000),
   });
-  if (!response.ok) throw new ApiError(502, 'Zoom recording information is unavailable.');
-  return response.json();
+  const raw = await response.text();
+  let data = null;
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    // Zoom can return an empty non-JSON response for some API errors.
+  }
+  if (!response.ok) {
+    const detail = typeof data?.message === 'string' ? ` ${data.message}` : '';
+    throw new ApiError(502, `Zoom request could not be completed.${detail}`);
+  }
+  return data;
+}
+export async function zoomApi(path) {
+  return zoomRequest(path);
 }
 export function occurrencePath(value) {
   // Zoom requires double-encoding UUIDs beginning with / or containing //.

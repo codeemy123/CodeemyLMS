@@ -1,6 +1,7 @@
 import { jsonBody, text, uuid, roleAllowed, ApiError } from '@/lib/server/api';
 import { authenticated } from '@/lib/server/auth';
 import { sessionScope } from '@/lib/server/data-access';
+import { zoomRequest } from '@/lib/server/zoom';
 export const runtime = 'nodejs';
 export const GET = authenticated(async (_request, _context, actor, db) => ({
   sessions: await db.class_sessions.findMany({
@@ -14,17 +15,60 @@ export const POST = authenticated(async (request, _context, actor, db) => {
   roleAllowed(actor, ['ADMIN']);
   const body = await jsonBody(request);
   const batchId = uuid(body.batchId);
-  const batch = await db.batches.findUnique({ where: { id: batchId } });
+  const batch = await db.batches.findUnique({
+    where: { id: batchId },
+    include: { users: { select: { email: true, full_name: true } } },
+  });
   if (!batch) throw new ApiError(400, 'Select a valid batch.');
   const start = new Date(body.startAt);
-  const end = body.endAt ? new Date(body.endAt) : null;
+  const durationMinutes = Number(body.durationMinutes || 60);
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 480)
+    throw new ApiError(400, 'Class duration must be between 15 minutes and 8 hours.');
+  const end = body.endAt
+    ? new Date(body.endAt)
+    : Number.isFinite(start.getTime())
+      ? new Date(start.getTime() + durationMinutes * 60_000)
+      : null;
   if (
     !Number.isFinite(start.getTime()) ||
     (end && (!Number.isFinite(end.getTime()) || end <= start))
   )
     throw new ApiError(400, 'Enter valid class start/end times.');
   let meetingUrl = null;
-  if (body.meetingUrl) {
+  let meetingUuid = null;
+  const createZoom = body.createZoom === true || body.createZoom === 'true' || body.createZoom === 'on';
+  if (createZoom) {
+    const hostEmail = String(body.hostEmail || batch.users?.email || '')
+      .trim()
+      .toLowerCase();
+    if (!hostEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(hostEmail))
+      throw new ApiError(
+        400,
+        'Enter a licensed Zoom host email, or assign a mentor with an academy email to this batch.',
+      );
+    const meeting = await zoomRequest(`/users/${encodeURIComponent(hostEmail)}/meetings`, {
+      method: 'POST',
+      body: {
+        topic: text(body.title, 255),
+        type: 2,
+        start_time: start.toISOString(),
+        duration: durationMinutes,
+        timezone: 'Asia/Kolkata',
+        settings: {
+          auto_recording: 'cloud',
+          waiting_room: true,
+          join_before_host: false,
+          mute_upon_entry: true,
+          host_video: true,
+          participant_video: false,
+        },
+      },
+    });
+    if (typeof meeting?.join_url !== 'string' || typeof meeting?.uuid !== 'string')
+      throw new ApiError(502, 'Zoom did not return a meeting link. Please try again.');
+    meetingUrl = meeting.join_url;
+    meetingUuid = meeting.uuid;
+  } else if (body.meetingUrl) {
     try {
       const url = new URL(body.meetingUrl);
       if (url.protocol !== 'https:' || url.username || url.password) throw new Error();
@@ -44,6 +88,10 @@ export const POST = authenticated(async (request, _context, actor, db) => {
         meeting_url: meetingUrl,
       },
     });
+    if (meetingUuid)
+      await tx.zoom_class_links.create({
+        data: { meeting_uuid: meetingUuid, class_id: session.id },
+      });
     const members = await tx.batch_members.findMany({ where: { batch_id: batchId } });
     const recipients = [
       ...new Set([
@@ -61,6 +109,6 @@ export const POST = authenticated(async (request, _context, actor, db) => {
           reference_id: session.id,
         })),
       });
-    return { session };
+    return { session, zoomMeeting: Boolean(meetingUuid) };
   });
 });
