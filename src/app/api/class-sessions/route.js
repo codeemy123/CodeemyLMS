@@ -21,11 +21,14 @@ export const POST = authenticated(async (request, _context, actor, db) => {
   });
   if (!batch) throw new ApiError(400, 'Select a valid batch.');
   const start = new Date(body.startAt);
-  const durationMinutes = Number(body.durationMinutes || 60);
+  const requestedEnd = body.endAt ? new Date(body.endAt) : null;
+  const durationMinutes = requestedEnd && Number.isFinite(start.getTime()) && Number.isFinite(requestedEnd.getTime())
+    ? Math.round((requestedEnd.getTime() - start.getTime()) / 60_000)
+    : Number(body.durationMinutes || 60);
   if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 480)
     throw new ApiError(400, 'Class duration must be between 15 minutes and 8 hours.');
-  const end = body.endAt
-    ? new Date(body.endAt)
+  const end = requestedEnd
+    ? requestedEnd
     : Number.isFinite(start.getTime())
       ? new Date(start.getTime() + durationMinutes * 60_000)
       : null;
@@ -34,6 +37,26 @@ export const POST = authenticated(async (request, _context, actor, db) => {
     (end && (!Number.isFinite(end.getTime()) || end <= start))
   )
     throw new ApiError(400, 'Enter valid class start/end times.');
+  const description = String(body.description || '').trim() || null;
+  if (description && description.length > 2000) throw new ApiError(400, 'Class details are too long.');
+  const thumbnailUrl = String(body.thumbnailUrl || '').trim() || null;
+  if (thumbnailUrl) {
+    try {
+      const thumbnail = new URL(thumbnailUrl, request.url);
+      const isSecureExternalImage = thumbnail.protocol === 'https:' && thumbnail.origin !== new URL(request.url).origin;
+      const isSignedStorageImage =
+        thumbnail.origin === new URL(request.url).origin &&
+        thumbnail.pathname === '/api/storage/object' &&
+        thumbnail.searchParams.has('key') &&
+        thumbnail.searchParams.has('signature');
+      if (!isSecureExternalImage && !isSignedStorageImage) throw new Error();
+    } catch {
+      throw new ApiError(400, 'Use a secure class cover image URL.');
+    }
+  }
+  const tags = Array.isArray(body.tags)
+    ? [...new Set(body.tags.map((tag) => String(tag).trim()).filter(Boolean).slice(0, 12).map((tag) => tag.slice(0, 40)))]
+    : [];
   let meetingUrl = null;
   let meetingUuid = null;
   const createZoom = body.createZoom === true || body.createZoom === 'true' || body.createZoom === 'on';
@@ -50,6 +73,7 @@ export const POST = authenticated(async (request, _context, actor, db) => {
       method: 'POST',
       body: {
         topic: text(body.title, 255),
+        agenda: description || undefined,
         type: 2,
         start_time: start.toISOString(),
         duration: durationMinutes,
@@ -83,6 +107,9 @@ export const POST = authenticated(async (request, _context, actor, db) => {
         batch_id: batchId,
         mentor_id: batch.mentor_id,
         title: text(body.title),
+        description,
+        thumbnail_url: thumbnailUrl,
+        tags,
         start_at: start,
         end_at: end,
         meeting_url: meetingUrl,

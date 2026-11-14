@@ -2,10 +2,22 @@
 
 import AdminRecordActions from '@/features/management/components/admin-record-editor';
 import { useWorkspace } from '@/features/workspace/context/workspace-context';
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Video } from 'lucide-react';
+import {
+  CalendarDays,
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  ImagePlus,
+  Plus,
+  Tags,
+  Video,
+  X,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import ClassRecordings from './class-recordings';
 import { api } from './api';
+import { uploadFile } from '@/lib/uploads';
 
 const IST = 'Asia/Kolkata';
 
@@ -28,6 +40,9 @@ export default function DatabaseClasses({ mode = 'class' }) {
   const [showForm, setShowForm] = useState(!isLive);
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedBatchId, setSelectedBatchId] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState('');
 
   const refreshSessions = async () => setSessions((await api('/api/class-sessions')).sessions);
 
@@ -60,8 +75,33 @@ export default function DatabaseClasses({ mode = 'class' }) {
 
   const openLiveForm = (value = '') => {
     setSelectedDate(value);
+    setSelectedBatchId('');
+    setThumbnailFile(null);
+    setThumbnailPreview('');
     setShowForm(true);
-    requestAnimationFrame(() => document.getElementById('live-class-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+
+  const selectedBatch = batches.find((batch) => batch.id === selectedBatchId);
+
+  const closeLiveForm = () => {
+    if (busy) return;
+    setShowForm(false);
+    setSelectedDate('');
+    setSelectedBatchId('');
+    setThumbnailFile(null);
+    setThumbnailPreview('');
+  };
+
+  const pickThumbnail = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
+      setMessage('Choose a PNG, JPG, WebP or GIF image smaller than 5 MB.');
+      event.target.value = '';
+      return;
+    }
+    setThumbnailFile(file);
+    setThumbnailPreview(URL.createObjectURL(file));
   };
 
   const scheduleSession = async (event) => {
@@ -70,13 +110,30 @@ export default function DatabaseClasses({ mode = 'class' }) {
     const data = Object.fromEntries(new FormData(form));
     setBusy(true);
     try {
-      data.startAt = new Date(data.startAt).toISOString();
-      if (isLive) data.createZoom = 'true';
+      if (isLive) {
+        const start = new Date(`${data.startDate}T${data.startTime}`);
+        const end = new Date(`${data.endDate}T${data.endTime}`);
+        if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start)
+          throw new Error('Choose a valid end time after the class start time.');
+        data.startAt = start.toISOString();
+        data.endAt = end.toISOString();
+        data.durationMinutes = String(Math.round((end.getTime() - start.getTime()) / 60_000));
+        data.createZoom = 'true';
+        data.tags = String(data.tags || '')
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean);
+        if (thumbnailFile) {
+          const uploaded = await uploadFile(thumbnailFile, { courseId: selectedBatch?.course_id });
+          data.thumbnailUrl = uploaded?.data || '';
+        }
+      } else {
+        data.startAt = new Date(data.startAt).toISOString();
+      }
       await api('/api/class-sessions', { method: 'POST', body: JSON.stringify(data) });
       await refreshSessions();
       form.reset();
-      setShowForm(false);
-      setSelectedDate('');
+      if (isLive) closeLiveForm();
       setMessage(isLive ? 'Zoom class scheduled and the batch has been notified.' : `${sessionLabelTitle} scheduled and participants notified.`);
     } catch (error) {
       setMessage(error.message);
@@ -133,7 +190,7 @@ export default function DatabaseClasses({ mode = 'class' }) {
         </div>
       )}
 
-      {role === 'Admin' && (!isLive || showForm) && (
+      {role === 'Admin' && !isLive && (
         <form id={isLive ? 'live-class-form' : undefined} className="auth-form class-schedule-form" onSubmit={scheduleSession}>
           {isLive && <div className="class-form-title"><h3>Schedule a Zoom live class</h3><p>Zoom uses the selected batch mentor's licensed account. You can also specify another licensed host email.</p></div>}
           <label>{sessionLabelTitle} title<input name="title" required maxLength={255} placeholder="e.g. Python fundamentals" /></label>
@@ -149,10 +206,67 @@ export default function DatabaseClasses({ mode = 'class' }) {
         </form>
       )}
 
+      {role === 'Admin' && isLive && showForm && (
+        <div className="live-class-drawer-backdrop" role="presentation" onMouseDown={closeLiveForm}>
+          <aside className="live-class-drawer" role="dialog" aria-modal="true" aria-labelledby="schedule-live-class-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="live-class-drawer-header">
+              <div>
+                <span className="drawer-icon"><CalendarRange size={25} /></span>
+                <h2 id="schedule-live-class-title">Schedule class</h2>
+                <p>Create a Zoom class for a selected batch. Their mentor hosts it and enrolled students receive secure access.</p>
+              </div>
+              <button type="button" className="drawer-close" onClick={closeLiveForm} aria-label="Close schedule class"><X size={24} /></button>
+            </div>
+
+            <form key={selectedDate} className="live-class-form" onSubmit={scheduleSession}>
+              <input id="live-class-thumbnail" className="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={pickThumbnail} />
+              <label htmlFor="live-class-thumbnail" className={`schedule-thumbnail-drop${thumbnailPreview ? ' has-preview' : ''}`} style={thumbnailPreview ? { backgroundImage: `url(${thumbnailPreview})` } : undefined}>
+                {thumbnailPreview ? <span className="thumbnail-change">Change class cover</span> : <><ImagePlus size={41} /><strong>Add a class cover</strong><small>PNG, JPG, WebP or GIF · recommended 298 × 180 px</small></>}
+              </label>
+
+              <label className="live-field full">Class name <b>*</b><input name="title" required maxLength={255} placeholder="e.g. Full Stack JavaScript — Live Session" /></label>
+              <label className="live-field full">Batch <b>*</b><select name="batchId" required value={selectedBatchId} onChange={(event) => setSelectedBatchId(event.target.value)} disabled={busy || batchesLoading || !batches.length}><option value="">Select the student batch</option>{batches.map((batch) => <option value={batch.id} key={batch.id}>{batch.name}{batch.courses?.title ? ` — ${batch.courses.title}` : ''}</option>)}</select></label>
+              {selectedBatch && <div className="selected-batch-note"><Video size={18} /><span><strong>{selectedBatch.name}</strong> students will be notified. {selectedBatch.users?.full_name ? `${selectedBatch.users.full_name} is the default Zoom host.` : 'Enter a licensed Zoom host email below.'}</span></div>}
+
+              <label className="live-field full">Time zone <b>*</b><select name="timezone" defaultValue="Asia/Kolkata"><option value="Asia/Kolkata">Asia/Kolkata (UTC+05:30) · India</option></select></label>
+              <div className="live-date-grid">
+                <label className="live-field">Start date <b>*</b><input type="date" name="startDate" required defaultValue={selectedDate ? selectedDate.slice(0, 10) : ''} /></label>
+                <label className="live-field">End date <b>*</b><input type="date" name="endDate" required defaultValue={selectedDate ? selectedDate.slice(0, 10) : ''} /></label>
+              </div>
+              <div className="live-date-grid">
+                <label className="live-field">Start time <b>*</b><input type="time" name="startTime" required defaultValue={selectedDate ? selectedDate.slice(11, 16) : ''} /></label>
+                <label className="live-field">End time <b>*</b><input type="time" name="endTime" required /></label>
+              </div>
+              <label className="live-field full">Class details <b>*</b><textarea name="description" required maxLength={2000} rows={5} placeholder="What will students learn in this class? Add instructions or preparation notes." /></label>
+              <label className="live-field full">Tags <span>(optional)</span><div className="tag-input"><Tags size={18} /><input name="tags" maxLength={300} placeholder="e.g. JavaScript, React, project review" /></div><small>Separate tags using commas.</small></label>
+              <label className="live-field full">Zoom host email <span>(optional)</span><input type="email" name="hostEmail" placeholder="Uses the selected batch mentor by default" /><small>The host must have an assigned Zoom Pro licence in your organization.</small></label>
+              {batchesLoading && <p className="drawer-inline-notice" role="status">Loading student batches…</p>}
+              {!batchesLoading && !batches.length && <div className="drawer-inline-notice"><p>Create a batch before scheduling its first class.</p><button type="button" className="btn secondary" onClick={() => { closeLiveForm(); go('Batches'); }}>Manage batches</button></div>}
+              <footer className="live-class-form-footer"><p><Clock3 size={17} /> Zoom cloud recording is enabled automatically. Only the selected batch can join and later watch it in CodeEmy.</p><button className="btn" type="submit" disabled={busy || batchesLoading || !batches.length}><Plus size={17} /> {busy ? 'Creating Zoom class…' : 'Create class & Zoom meeting'}</button></footer>
+            </form>
+          </aside>
+        </div>
+      )}
+
       {message && <p className="class-notice" role="status">{message}</p>}
       <div className="class-list-heading"><h3>Scheduled {sessionLabelPlural}</h3><span>{visibleSessions.length} sessions</span></div>
       {loading && <p role="status">Loading {sessionLabelPlural}…</p>}
-      {visibleSessions.map((session) => <article className="class-session-card" key={session.id}><div><h3>{session.title}</h3><AdminRecordActions entity="classes" record={session} onSaved={refreshSessions} /><p>{session.batches.name} · {new Date(session.start_at).toLocaleString('en-IN', { timeZone: IST })} IST</p>{session.meeting_url?.startsWith('https://') && <a className="btn secondary" href={session.meeting_url} target="_blank" rel="noreferrer"><Video size={17} /> Join class</a>}<ClassRecordings classId={session.id} /></div></article>)}
+      {visibleSessions.map((session) => (
+        <article className="class-session-card live-session-card" key={session.id}>
+          {session.thumbnail_url && <img className="class-session-thumbnail" src={session.thumbnail_url} alt="" />}
+          <div className="class-session-content">
+            <div className="class-session-title-row">
+              <h3>{session.title}</h3>
+              <AdminRecordActions entity="classes" record={session} onSaved={refreshSessions} />
+            </div>
+            <p>{session.batches.name} · {new Date(session.start_at).toLocaleString('en-IN', { timeZone: IST })} IST</p>
+            {session.description && <p className="class-session-description">{session.description}</p>}
+            {!!session.tags?.length && <div className="class-session-tags">{session.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>}
+            {session.meeting_url?.startsWith('https://') && <a className="btn secondary" href={session.meeting_url} target="_blank" rel="noreferrer"><Video size={17} /> Join class</a>}
+            <ClassRecordings classId={session.id} />
+          </div>
+        </article>
+      ))}
       {!loading && !visibleSessions.length && <div className="class-empty"><CalendarDays size={32} /><h3>No {sessionLabelPlural} scheduled yet</h3><p>{role === 'Admin' ? `Your sessions will appear here after you schedule a ${sessionLabel}.` : 'Your academy will share upcoming sessions here.'}</p></div>}
     </section>
   );
