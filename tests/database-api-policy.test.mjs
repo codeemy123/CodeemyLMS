@@ -59,6 +59,9 @@ test('database policy derives course/session access from the server actor ID', (
   assert.equal(courseScope(student).status, 'PUBLISHED');
   assert.equal(courseScope(mentor).OR[1].batches.some.mentor_id, 'mentor-id');
   assert.equal(sessionScope(student).batches.batch_members.some.student_id, 'student-id');
+  assert.deepEqual(sessionScope(mentor), {
+    OR: [{ mentor_id: 'mentor-id' }, { batches: { mentor_id: 'mentor-id' } }],
+  });
   assert.deepEqual(courseScope({ role: 'ADMIN' }), {});
   assert.throws(() => roleAllowed(student, ['ADMIN', 'MENTOR']), { status: 403 });
 });
