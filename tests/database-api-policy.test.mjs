@@ -22,7 +22,7 @@ const testEnvironment = {
 const productionEnvironment = {
   NODE_ENV: 'production',
   LMS_PUBLIC_ORIGINS:
-    'https://lerno.codeemy.in,https://learnoin.netlify.app',
+    'https://lerno.codeemy.in,https://learnoin.netlify.app,https://api.lerno.codeemy.in',
 };
 
 test('database writes reject missing, malformed and cross-site origins', () => {
@@ -54,12 +54,13 @@ test('database writes reject missing, malformed and cross-site origins', () => {
   );
 });
 
-test('Cloud Run permits only the exact public LMS origins through the proxy', () => {
-  const host = 'codeemy-lms-796236466632.asia-south1.run.app';
+test('Backend proxy permits only the exact public LMS origins through the proxy', () => {
+  const host = 'api.lerno.codeemy.in';
 
   for (const origin of [
     'https://lerno.codeemy.in',
     'https://learnoin.netlify.app',
+    'https://api.lerno.codeemy.in',
   ]) {
     assert.doesNotThrow(() =>
       assertOrigin(

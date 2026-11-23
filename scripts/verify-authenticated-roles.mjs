@@ -20,6 +20,7 @@ if (
       'codeemy-lms-796236466632.asia-south1.run.app',
       'codeemy-lms-ro3s2c3rda-el.a.run.app',
       'lerno.codeemy.in',
+      'api.lerno.codeemy.in',
     ].includes(new URL(origin).hostname)
   )
 )
