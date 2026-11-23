@@ -13,6 +13,7 @@ const google = {
 
 const adminGoogle = {
   ...google,
+  uid: 'verified-admin-firebase-id',
   email: 'ci-admin@example.com',
   name: 'CI Administrator',
 };
@@ -21,7 +22,7 @@ function database(actor, decision = null, request = null) {
   return {
     users: {
       findUnique: async ({ where }) => {
-        assert.equal(where.firebase_uid, google.uid);
+        assert.equal(where.firebase_uid, actor?.firebase_uid ?? google.uid);
         return actor;
       },
     },
@@ -59,14 +60,19 @@ test('new password identities and unverified Google identities cannot bypass reg
 test('existing approved Google users keep the role assigned in the database', async () => {
   const previousAdminEmails = process.env.LMS_ADMIN_EMAILS;
 
-  // Isolated administrator identity for this test only.
   process.env.LMS_ADMIN_EMAILS = adminGoogle.email;
 
   try {
     for (const role of ['ADMIN', 'MENTOR', 'STUDENT']) {
       assert.deepEqual(
         await resolveSessionAccount(
-          database({ id: 'user', role, status: 'ACTIVE' }),
+          database({
+            id: 'user',
+            firebase_uid: adminGoogle.uid,
+            email: adminGoogle.email,
+            role,
+            status: 'ACTIVE',
+          }),
           {
             ...adminGoogle,
             role: 'ADMIN',
@@ -76,7 +82,6 @@ test('existing approved Google users keep the role assigned in the database', as
       );
     }
   } finally {
-    // Restore the original CI environment.
     if (previousAdminEmails === undefined) {
       delete process.env.LMS_ADMIN_EMAILS;
     } else {
@@ -86,7 +91,13 @@ test('existing approved Google users keep the role assigned in the database', as
 });
 
 test('pending and rejected existing Google accounts remain blocked instead of re-registering', async () => {
-  const actor = { id: 'user', role: 'STUDENT', status: 'INACTIVE' };
+  const actor = {
+    id: 'user',
+    firebase_uid: google.uid,
+    email: google.email,
+    role: 'STUDENT',
+    status: 'INACTIVE',
+  };
 
   await assert.rejects(
     resolveSessionAccount(database(actor, null, { id: 'request' }), google),
