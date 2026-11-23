@@ -29,11 +29,13 @@ export function assertOrigin(request, environment = process.env) {
   try {
     if (!origin) throw new Error();
     const source = new URL(origin);
+    const host = request.headers.get('host') || new URL(request.url).host;
+    const allowed = configuredOrigins(environment);
+
     if (environment.NODE_ENV === 'production') {
-      if (!configuredOrigins(environment).includes(source.origin)) throw new Error();
+      if (!allowed.includes(source.origin)) throw new Error();
     } else {
-      const host = request.headers.get('host') || new URL(request.url).host;
-      if (source.host !== host) throw new Error();
+      if (source.host !== host && !allowed.includes(source.origin)) throw new Error();
     }
   } catch {
     throw new ApiError(403, 'A same-origin request is required.');
