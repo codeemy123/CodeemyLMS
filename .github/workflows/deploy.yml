@@ -14,7 +14,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      LMS_ADMIN_EMAILS: "YOUR_ADMIN_EMAIL"
+      LMS_ADMIN_EMAILS: "info.codeemy@gmail.com"
 
     steps:
       - name: Checkout repository
