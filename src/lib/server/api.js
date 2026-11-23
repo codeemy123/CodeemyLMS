@@ -4,8 +4,14 @@ export class ApiError extends Error {
     this.status = status;
   }
 }
+const TRUSTED_PRODUCTION_ORIGINS = [
+  'https://lerno.codeemy.in',
+  'https://api.lerno.codeemy.in',
+  'https://learnoin.netlify.app',
+];
+
 function configuredOrigins(environment) {
-  return String(environment.LMS_PUBLIC_ORIGINS || '')
+  const fromEnv = String(environment.LMS_PUBLIC_ORIGINS || '')
     .split(',')
     .map((value) => value.trim().replace(/\/$/, ''))
     .filter((value) => {
@@ -15,6 +21,7 @@ function configuredOrigins(environment) {
         return false;
       }
     });
+  return [...new Set([...TRUSTED_PRODUCTION_ORIGINS, ...fromEnv])];
 }
 
 export function assertOrigin(request, environment = process.env) {

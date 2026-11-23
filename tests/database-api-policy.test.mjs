@@ -1,19 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  assertOrigin,
-  uuid,
-  numeric,
-  roleAllowed,
-  jsonBody,
-} from '../src/lib/server/api.js';
+import { assertOrigin, uuid, numeric, roleAllowed, jsonBody } from '../src/lib/server/api.js';
 
-import {
-  courseScope,
-  sessionScope,
-  evaluateSubmission,
-} from '../src/lib/server/data-access.js';
+import { courseScope, sessionScope, evaluateSubmission } from '../src/lib/server/data-access.js';
 
 const testEnvironment = {
   NODE_ENV: 'test',
@@ -31,9 +21,7 @@ test('database writes reject missing, malformed and cross-site origins', () => {
       () =>
         assertOrigin(
           new Request('https://lms.example/api/courses', {
-            headers: origin
-              ? { origin, host: 'lms.example' }
-              : { host: 'lms.example' },
+            headers: origin ? { origin, host: 'lms.example' } : { host: 'lms.example' },
           }),
           testEnvironment,
         ),
@@ -99,36 +87,21 @@ test('database policy derives course/session access from the server actor ID', (
   const student = { id: 'student-id', role: 'STUDENT' };
   const mentor = { id: 'mentor-id', role: 'MENTOR' };
 
-  assert.equal(
-    courseScope(student).OR[0].enrollments.some.student_id,
-    'student-id',
-  );
+  assert.equal(courseScope(student).OR[0].enrollments.some.student_id, 'student-id');
 
   assert.equal(courseScope(student).status, 'PUBLISHED');
 
-  assert.equal(
-    courseScope(mentor).OR[1].batches.some.mentor_id,
-    'mentor-id',
-  );
+  assert.equal(courseScope(mentor).OR[1].batches.some.mentor_id, 'mentor-id');
 
-  assert.equal(
-    sessionScope(student).batches.batch_members.some.student_id,
-    'student-id',
-  );
+  assert.equal(sessionScope(student).batches.batch_members.some.student_id, 'student-id');
 
   assert.deepEqual(sessionScope(mentor), {
-    OR: [
-      { mentor_id: 'mentor-id' },
-      { batches: { mentor_id: 'mentor-id' } },
-    ],
+    OR: [{ mentor_id: 'mentor-id' }, { batches: { mentor_id: 'mentor-id' } }],
   });
 
   assert.deepEqual(courseScope({ role: 'ADMIN' }), {});
 
-  assert.throws(
-    () => roleAllowed(student, ['ADMIN', 'MENTOR']),
-    { status: 403 },
-  );
+  assert.throws(() => roleAllowed(student, ['ADMIN', 'MENTOR']), { status: 403 });
 });
 
 test('database validation rejects invalid IDs, marks and non-object JSON', async () => {
@@ -178,14 +151,7 @@ test('a mentor cannot evaluate an unrelated student even when the course is visi
   };
 
   await assert.rejects(
-    evaluateSubmission(
-      db,
-      { id: 'mentor-id', role: 'MENTOR' },
-      'assignment',
-      'id',
-      90,
-      '',
-    ),
+    evaluateSubmission(db, { id: 'mentor-id', role: 'MENTOR' }, 'assignment', 'id', 90, ''),
     { status: 403 },
   );
 
