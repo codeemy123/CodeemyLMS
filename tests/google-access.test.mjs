@@ -12,17 +12,26 @@ const google = {
 };
 
 const adminGoogle = {
-  ...google,
   uid: 'verified-admin-firebase-id',
   email: 'ci-admin@example.com',
   name: 'CI Administrator',
+  email_verified: true,
+  firebase: { sign_in_provider: 'google.com' },
 };
 
-function database(actor, decision = null, request = null) {
+// Keep authorization tests independent from a developer's local .env values.
+// The production code still reads process.env when no environment is supplied.
+const testEnvironment = {
+  LMS_ADMIN_EMAILS: adminGoogle.email,
+  LMS_REQUIRE_VERIFIED_ADMIN_EMAIL: 'true',
+  LMS_REQUIRE_GOOGLE_ADMIN_PROVIDER: 'true',
+};
+
+function database(actor, decision = null, request = null, expectedUid = google.uid) {
   return {
     users: {
       findUnique: async ({ where }) => {
-        assert.equal(where.firebase_uid, actor?.firebase_uid ?? google.uid);
+        assert.equal(where.firebase_uid, expectedUid);
         return actor;
       },
     },
@@ -34,7 +43,7 @@ function database(actor, decision = null, request = null) {
 }
 
 test('new verified Google identity completes registration without gaining a portal role', async () => {
-  const result = await resolveSessionAccount(database(null), google);
+  const result = await resolveSessionAccount(database(null), google, testEnvironment);
 
   assert.deepEqual(result, {
     needsRegistration: true,
@@ -51,42 +60,43 @@ test('new password identities and unverified Google identities cannot bypass reg
     { ...google, email: null },
   ]) {
     await assert.rejects(
-      resolveSessionAccount(database(null), token),
+      resolveSessionAccount(database(null), token, testEnvironment),
       (e) => e.status === 403,
     );
   }
 });
 
-test('existing approved Google users keep the role assigned in the database', async () => {
-  const previousAdminEmails = process.env.LMS_ADMIN_EMAILS;
+test('existing approved official administrator is authorized as ADMIN', async () => {
+  const actor = {
+    id: 'admin-user',
+    firebase_uid: adminGoogle.uid,
+    email: adminGoogle.email,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+  };
 
-  process.env.LMS_ADMIN_EMAILS = adminGoogle.email;
+  const result = await resolveSessionAccount(
+    database(actor, null, null, adminGoogle.uid),
+    adminGoogle,
+    testEnvironment,
+  );
 
-  try {
-    for (const role of ['ADMIN', 'MENTOR', 'STUDENT']) {
-      assert.deepEqual(
-        await resolveSessionAccount(
-          database({
-            id: 'user',
-            firebase_uid: adminGoogle.uid,
-            email: adminGoogle.email,
-            role,
-            status: 'ACTIVE',
-          }),
-          {
-            ...adminGoogle,
-            role: 'ADMIN',
-          },
-        ),
-        { role },
-      );
-    }
-  } finally {
-    if (previousAdminEmails === undefined) {
-      delete process.env.LMS_ADMIN_EMAILS;
-    } else {
-      process.env.LMS_ADMIN_EMAILS = previousAdminEmails;
-    }
+  assert.deepEqual(result, { role: 'ADMIN' });
+});
+
+test('existing approved Google users keep MENTOR and STUDENT roles from the database', async () => {
+  for (const role of ['MENTOR', 'STUDENT']) {
+    const actor = {
+      id: 'user',
+      firebase_uid: google.uid,
+      email: google.email,
+      role,
+      status: 'ACTIVE',
+    };
+
+    const result = await resolveSessionAccount(database(actor), google, testEnvironment);
+
+    assert.deepEqual(result, { role });
   }
 });
 
@@ -100,7 +110,7 @@ test('pending and rejected existing Google accounts remain blocked instead of re
   };
 
   await assert.rejects(
-    resolveSessionAccount(database(actor, null, { id: 'request' }), google),
+    resolveSessionAccount(database(actor, null, { id: 'request' }), google, testEnvironment),
     (e) =>
       e.status === 403 &&
       e.message.includes('waiting for administrator approval'),
@@ -113,6 +123,7 @@ test('pending and rejected existing Google accounts remain blocked instead of re
         details: { reason: 'Verify college' },
       }),
       google,
+      testEnvironment,
     ),
     (e) => e.status === 403 && e.message.includes('Verify college'),
   );

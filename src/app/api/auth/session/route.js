@@ -5,6 +5,23 @@ import { sessionCookie } from '@/lib/server/auth';
 import { assertOrigin, ApiError, jsonBody, errorResponse } from '@/lib/server/api';
 import { getPrisma } from '@/lib/prisma';
 export const runtime = 'nodejs';
+
+function sessionCookieOptions(request, maxAge) {
+  const forwardedProtocol = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim();
+
+  return {
+    httpOnly: true,
+    // The browser only reaches the app over HTTPS in production.  Do not rely
+    // exclusively on a reverse proxy preserving x-forwarded-proto.
+    secure:
+      process.env.NODE_ENV === 'production' ||
+      forwardedProtocol === 'https' ||
+      new URL(request.url).protocol === 'https:',
+    sameSite: 'lax',
+    path: '/',
+    maxAge,
+  };
+}
 export async function POST(request) {
   try {
     assertOrigin(request);
@@ -24,27 +41,18 @@ export async function POST(request) {
     const account = await resolveSessionAccount(db, token);
     if (account.needsRegistration) {
       const response = NextResponse.json(account, { headers: { 'Cache-Control': 'no-store' } });
-      response.cookies.set(sessionCookie, '', {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 0,
-      });
+      response.cookies.set(sessionCookie, '', sessionCookieOptions(request, 0));
       return response;
     }
     const value = await auth.createSessionCookie(body.idToken, {
       expiresIn: 5 * 24 * 60 * 60 * 1000,
     });
     const response = NextResponse.json({ role: account.role });
-    response.cookies.set(sessionCookie, value, {
-      httpOnly: true,
-      secure:
-        request.headers.get('x-forwarded-proto') === 'https' ||
-        new URL(request.url).protocol === 'https:',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 5 * 24 * 60 * 60,
-    });
+    response.cookies.set(
+      sessionCookie,
+      value,
+      sessionCookieOptions(request, 5 * 24 * 60 * 60),
+    );
     response.headers.set('Cache-Control', 'no-store');
     return response;
   } catch (error) {
@@ -55,12 +63,7 @@ export async function DELETE(request) {
   try {
     assertOrigin(request);
     const response = NextResponse.json({ signedOut: true });
-    response.cookies.set(sessionCookie, '', {
-      httpOnly: true,
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 0,
-    });
+    response.cookies.set(sessionCookie, '', sessionCookieOptions(request, 0));
     return response;
   } catch (error) {
     return errorResponse(error);
