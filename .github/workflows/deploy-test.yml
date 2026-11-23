@@ -45,6 +45,3 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "SSH connection test failed."
           }
-
-          # Remove temporary private key
-          Remove-Item $keyPath -Force
