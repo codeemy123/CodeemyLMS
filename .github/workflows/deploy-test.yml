@@ -18,14 +18,23 @@ jobs:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           $keyPath = "$env:RUNNER_TEMP\deploy_key"
+          $sshDirectory = "$env:USERPROFILE\.ssh"
+          $knownHostsPath = "$sshDirectory\known_hosts"
 
+          # Create SSH directory
+          New-Item -ItemType Directory -Path $sshDirectory -Force | Out-Null
+
+          # Save private key
           $env:DEPLOY_SSH_KEY | Set-Content -Path $keyPath
 
+          # Restrict private key permissions
           icacls $keyPath /inheritance:r /grant:r "$($env:USERNAME):(R)" | Out-Null
 
+          # Add server host key to known_hosts
           ssh-keyscan -p $env:DEPLOY_PORT $env:DEPLOY_HOST |
-            Out-File "$env:USERPROFILE\.ssh\known_hosts" -Append
+            Out-File -FilePath $knownHostsPath -Append
 
+          # Test SSH connection
           ssh -i $keyPath `
             -p $env:DEPLOY_PORT `
             -o StrictHostKeyChecking=yes `
@@ -37,4 +46,5 @@ jobs:
             throw "SSH connection test failed."
           }
 
+          # Remove temporary private key
           Remove-Item $keyPath -Force
