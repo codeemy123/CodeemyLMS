@@ -37,6 +37,7 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
   const [actor, setActor] = useState(initialActor);
   const [navigationPending, startNavigation] = useTransition();
   const [today, setToday] = useState('');
+  const [dashboardGreeting, setDashboardGreeting] = useState('');
   useEffect(() => {
     setToday(
       new Intl.DateTimeFormat('en-IN', {
@@ -45,6 +46,18 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
         year: 'numeric',
         timeZone: 'Asia/Kolkata',
       }).format(new Date()),
+    );
+
+    const hourPart = new Intl.DateTimeFormat('en-IN', {
+      hour: 'numeric',
+      hourCycle: 'h23',
+      timeZone: 'Asia/Kolkata',
+    })
+      .formatToParts(new Date())
+      .find((part) => part.type === 'hour');
+    const hour = Number(hourPart?.value ?? 12);
+    setDashboardGreeting(
+      hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening',
     );
   }, []);
   useEffect(() => {
@@ -705,7 +718,7 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
       role === 'Admin'
         ? 'Academy overview'
         : actor
-          ? 'Welcome back, ' + actor.full_name
+          ? `${dashboardGreeting || 'Welcome back'}, ${actor.full_name || 'there'} 👋`
           : 'Your workspace',
     'My Courses': 'My courses',
     Mentor: 'Your mentor',
@@ -934,7 +947,7 @@ export default function WorkspaceLayout({ children, initialActor = null }) {
             <DatabaseWorkflows
               kind="queries"
               title="1:1 Consultations"
-              description="Review learner and mentor support conversations, reply clearly, and mark requests resolved."
+              description="Review every learner–mentor support conversation in one place. Replies notify both participants and remain visible to the Admin support team."
             />
           ) : viewState === 'Loading' ? (
             <div className="card skeleton" aria-label="Loading content" />

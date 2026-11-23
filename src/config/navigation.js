@@ -95,7 +95,6 @@ export const adminLearningManager = [
   ['Study Materials', FileText],
   ['Quiz', ClipboardList],
   ['Manage Tasks', ListChecks],
-  ['Webinars', CalendarDays],
   ['1:1 Consultations', MessageSquare],
 ];
 

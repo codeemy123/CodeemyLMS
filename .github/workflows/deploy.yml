@@ -1,0 +1,39 @@
+
+name: CodeEmy LMS CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Approve required install scripts
+        run: npm install --ignore-scripts=false approve @prisma/engines prisma @firebase/util protobufjs
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build application
+        run: npm run build

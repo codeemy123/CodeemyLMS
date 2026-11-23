@@ -134,6 +134,40 @@ export async function workflowRead(db, actor, kind) {
   throw new ApiError(404, 'Workflow not found.');
 }
 
+async function notifyQueryAudience(db, { actor, query, directRecipientIds = [], event = 'reply' }) {
+  // Every consultation is visible to Admin support. The direct participant still
+  // receives the normal notification, while active admins receive a mirrored one.
+  const admins = await db.users.findMany({
+    where: { role: 'ADMIN', status: 'ACTIVE' },
+    select: { id: true },
+  });
+  const adminIds = new Set(admins.map((admin) => admin.id));
+  const recipients = new Set([...directRecipientIds, ...adminIds]);
+  recipients.delete(actor.id);
+
+  await Promise.all(
+    [...recipients]
+      .filter(Boolean)
+      .map((userId) =>
+        db.notifications.create({
+          data: {
+            user_id: userId,
+            title: adminIds.has(userId)
+              ? event === 'created'
+                ? 'New support query'
+                : 'Support conversation updated'
+              : event === 'created'
+                ? 'New student query'
+                : 'Query reply',
+            message: query.subject,
+            type: 'QUERY',
+            reference_id: query.id,
+          },
+        }),
+      ),
+  );
+}
+
 export async function workflowWrite(db, actor, kind, body) {
   if (kind === 'progress') {
     roleAllowed(actor, ['STUDENT']);
@@ -215,17 +249,14 @@ export async function workflowWrite(db, actor, kind, body) {
       const route = await db.audit_logs.findFirst({
         where: { entity_id: query.id, action: 'QUERY_ROUTED' },
       });
-      const recipient = actor.role === 'STUDENT' ? route?.details?.mentorId : query.student_id;
-      if (recipient && recipient !== actor.id)
-        await db.notifications.create({
-          data: {
-            user_id: recipient,
-            title: 'Query reply',
-            message: query.subject,
-            type: 'QUERY',
-            reference_id: query.id,
-          },
-        });
+      const mentorId = route?.details?.mentorId;
+      const directRecipientIds =
+        actor.role === 'STUDENT'
+          ? [mentorId]
+          : actor.role === 'MENTOR'
+            ? [query.student_id]
+            : [query.student_id, mentorId];
+      await notifyQueryAudience(db, { actor, query, directRecipientIds });
       return { reply };
     }
     roleAllowed(actor, ['STUDENT']);
@@ -260,14 +291,11 @@ export async function workflowWrite(db, actor, kind, body) {
         details: { courseId: course.id, mentorId, batchId: membership?.batch_id || null },
       },
     });
-    await db.notifications.create({
-      data: {
-        user_id: mentorId,
-        title: 'New student query',
-        message: query.subject,
-        type: 'QUERY',
-        reference_id: query.id,
-      },
+    await notifyQueryAudience(db, {
+      actor,
+      query,
+      directRecipientIds: [mentorId],
+      event: 'created',
     });
     return { query };
   }

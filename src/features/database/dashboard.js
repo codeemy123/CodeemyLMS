@@ -24,19 +24,24 @@ export default function DatabaseDashboard() {
   async function load() {
     setError('');
     try {
-      const [c, s, n, people, batches] = await Promise.all([
+      const [c, s, n, people, batches, approvals] = await Promise.all([
         api('/api/courses'),
         api('/api/class-sessions'),
         api('/api/notifications'),
         role === 'Admin' ? api('/api/people') : Promise.resolve({ users: [] }),
         role === 'Admin' ? api('/api/batches') : Promise.resolve({ batches: [] }),
+        role === 'Admin'
+          ? api('/api/admin/approvals')
+          : Promise.resolve({ pendingCount: 0 }),
       ]);
       setData({
-        courses: c.courses,
-        sessions: s.sessions,
-        unread: n.unreadCount,
-        people: people.users,
-        batches: batches.batches,
+        courses: c.courses || [],
+        sessions: s.sessions || [],
+        unread: n.unreadCount || 0,
+        notifications: n.notifications || [],
+        people: people.users || [],
+        batches: batches.batches || [],
+        approvalCount: approvals.pendingCount || 0,
       });
     } catch (e) {
       setError(e.message);
@@ -115,6 +120,19 @@ export default function DatabaseDashboard() {
     .filter((s) => new Date(s.start_at) >= new Date())
     .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))
     .slice(0, 3);
+
+  if (admin) {
+    return (
+      <AdminCommandDashboard
+        actor={actor}
+        data={data}
+        error={error}
+        retry={load}
+        go={go}
+        upcoming={upcoming}
+      />
+    );
+  }
   return (
     <div className="academy-dashboard">
       <section className={'academy-hero' + (student ? ' student-quote-banner' : '')}>
@@ -381,4 +399,196 @@ export default function DatabaseDashboard() {
       )}
     </div>
   );
+}
+
+function AdminCommandDashboard({ actor, data, error, retry, go, upcoming }) {
+  const people = data?.people || [];
+  const metrics = [
+    {
+      label: 'Total Courses',
+      value: data?.courses?.length,
+      detail: 'Academy course library',
+      icon: BookOpen,
+      page: 'Courses',
+      tone: 'violet',
+    },
+    {
+      label: 'Total Teachers',
+      value: people.filter((person) => person.role === 'MENTOR').length,
+      detail: 'Assigned mentor accounts',
+      icon: GraduationCap,
+      page: 'Mentors',
+      tone: 'blue',
+    },
+    {
+      label: 'Total Students',
+      value: people.filter((person) => person.role === 'STUDENT').length,
+      detail: 'Active academy learners',
+      icon: Users,
+      page: 'Students',
+      tone: 'green',
+    },
+    {
+      label: 'Offline Enrollment Requests',
+      value: data?.approvalCount,
+      detail: 'Awaiting academy review',
+      icon: Bell,
+      page: 'Account Approvals',
+      tone: 'amber',
+    },
+  ];
+  const notifications = (data?.notifications || []).slice(0, 4);
+
+  return (
+    <div className="admin-command-dashboard">
+      <section className="admin-command-welcome">
+        <div>
+          <span className="admin-command-overline">Academy control centre</span>
+          <h2>👋 Welcome, {actor?.full_name || 'CodeEmy Admin'}</h2>
+          <p>Keep your courses, people, classes and academy activity in one place.</p>
+        </div>
+        <div className="admin-command-institute">
+          <span>Institute name</span>
+          <strong>CodeEmy Technologies</strong>
+        </div>
+      </section>
+
+      {error ? (
+        <div className="academy-error admin-command-error" role="alert">
+          <span>{error}</span>
+          <button type="button" onClick={retry}>Try again</button>
+        </div>
+      ) : null}
+
+      <section className="admin-command-metrics" aria-label="Academy totals">
+        {metrics.map((metric) => {
+          const Icon = metric.icon;
+          return (
+            <button
+              className={`admin-command-metric ${metric.tone}`}
+              key={metric.label}
+              type="button"
+              onClick={() => go(metric.page)}
+            >
+              <span className="admin-command-metric-icon"><Icon size={21} /></span>
+              <span className="admin-command-metric-label">{metric.label}</span>
+              <strong>{data ? (metric.value ?? 0) : '—'}</strong>
+              <span className="admin-command-metric-detail">{metric.detail}</span>
+              <ArrowUpRight className="admin-command-metric-arrow" size={18} />
+            </button>
+          );
+        })}
+      </section>
+
+      <section className="admin-command-grid">
+        <div className="admin-command-left">
+          <section className="admin-command-panel">
+            <div className="admin-command-panel-head">
+              <div>
+                <span className="admin-command-overline">Teaching calendar</span>
+                <h2>Live & upcoming classes</h2>
+                <p>Your next batch sessions appear here.</p>
+              </div>
+              <button className="admin-command-action" type="button" onClick={() => go('Live Classes')}>
+                <Plus size={17} /> Schedule class
+              </button>
+            </div>
+            <div className="admin-command-list">
+              {upcoming.length ? upcoming.map((session) => (
+                <button className="admin-command-session" type="button" key={session.id} onClick={() => go('Live Classes')}>
+                  <span className="admin-command-date-tile">
+                    <b>{sessionDatePart(session.start_at, 'day')}</b>
+                    <small>{sessionDatePart(session.start_at, 'month')}</small>
+                  </span>
+                  <span className="admin-command-session-info">
+                    <strong>{session.title || 'Live class'}</strong>
+                    <span>{session.batches?.name || 'Academy batch'} · {formatSessionDate(session.start_at)}</span>
+                  </span>
+                  <ChevronRight size={19} />
+                </button>
+              )) : (
+                <div className="admin-command-empty">
+                  <CalendarDays size={25} />
+                  <strong>No live classes scheduled yet</strong>
+                  <span>Schedule a batch session when your next class is ready.</span>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="admin-command-panel admin-command-quick-panel">
+            <div className="admin-command-panel-head compact">
+              <div>
+                <span className="admin-command-overline">Quick actions</span>
+                <h2>Manage your academy</h2>
+              </div>
+            </div>
+            <div className="admin-command-quick-actions">
+              <button type="button" onClick={() => go('Courses')}><BookOpen size={19} /><span><b>Create or manage courses</b><small>Update the learning library</small></span><ChevronRight size={18} /></button>
+              <button type="button" onClick={() => go('Live Classes')}><CalendarDays size={19} /><span><b>Schedule a live class</b><small>Create a Zoom session for a batch</small></span><ChevronRight size={18} /></button>
+              <button type="button" onClick={() => go('Account Approvals')}><Users size={19} /><span><b>Review access requests</b><small>Approve learners and mentors</small></span><ChevronRight size={18} /></button>
+            </div>
+          </section>
+        </div>
+
+        <section className="admin-command-panel admin-command-notifications">
+          <div className="admin-command-panel-head compact">
+            <div>
+              <span className="admin-command-overline">Activity centre</span>
+              <h2>Notifications</h2>
+            </div>
+            <button className="admin-command-text-link" type="button" onClick={() => go('Notifications')}>View all <ArrowRight size={16} /></button>
+          </div>
+          <div className="admin-command-notification-list">
+            {notifications.length ? notifications.map((notification) => (
+              <button className="admin-command-notification" type="button" key={notification.id} onClick={() => go('Notifications')}>
+                <span className={`admin-command-notification-icon ${notification.is_read ? 'read' : ''}`}><Bell size={18} /></span>
+                <span>
+                  <b>{notification.title || 'Academy update'} {!notification.is_read ? <em>New</em> : null}</b>
+                  <span>{notification.message || 'A new update is available in your workspace.'}</span>
+                  <small>{formatRelativeTime(notification.created_at)}</small>
+                </span>
+              </button>
+            )) : (
+              <div className="admin-command-empty notification-empty">
+                <Bell size={25} />
+                <strong>All caught up</strong>
+                <span>New academy activity will appear here.</span>
+              </div>
+            )}
+          </div>
+        </section>
+      </section>
+    </div>
+  );
+}
+
+function sessionDatePart(value, part) {
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return part === 'day' ? '—' : '';
+  return new Intl.DateTimeFormat('en-IN', {
+    day: part === 'day' ? '2-digit' : undefined,
+    month: part === 'month' ? 'short' : undefined,
+    timeZone: 'Asia/Kolkata',
+  }).format(date);
+}
+
+function formatSessionDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return 'To be scheduled';
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
+    timeZone: 'Asia/Kolkata',
+  }).format(date);
+}
+
+function formatRelativeTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return '';
+  const minutes = Math.max(0, Math.floor((Date.now() - date.valueOf()) / 60000));
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }

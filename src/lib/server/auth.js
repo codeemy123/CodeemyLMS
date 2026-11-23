@@ -1,4 +1,5 @@
 import { getPrisma } from '@/lib/prisma';
+import { adminIdentityIssue, isConfiguredAdminEmail } from './admin-identity.js';
 import { firebaseAuth } from './firebase.js';
 import { ApiError, assertOrigin, errorResponse } from './api.js';
 export const sessionCookie = 'codeemy_session';
@@ -29,6 +30,15 @@ export async function requireActor(request) {
   });
   if (!actor || actor.status !== 'ACTIVE')
     throw new ApiError(403, 'Your account is not active or has not been provisioned.');
+  if (!['ADMIN', 'MENTOR', 'STUDENT'].includes(actor.role))
+    throw new ApiError(403, 'Account role is invalid.');
+
+  if (actor.role === 'ADMIN') {
+    const issue = adminIdentityIssue(decoded, actor);
+    if (issue) throw new ApiError(403, issue);
+  } else if (isConfiguredAdminEmail(actor.email) || isConfiguredAdminEmail(decoded.email)) {
+    throw new ApiError(403, 'The official administrator identity must have an active ADMIN role.');
+  }
   return actor;
 }
 export function authenticated(handler) {

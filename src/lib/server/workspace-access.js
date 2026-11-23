@@ -9,22 +9,8 @@ export const requireWorkspaceRole = cache(async function requireWorkspaceRole(ro
   let actor;
   try {
     const cookieStore = await cookies();
-    if (process.env.LMS_BACKEND_ORIGIN) {
-      const session = cookieStore.get('codeemy_session')?.value;
-      if (!session) throw new Error('Missing session');
-      const response = await fetch(new URL('/api/auth/me', process.env.LMS_BACKEND_ORIGIN), {
-        headers: { cookie: 'codeemy_session=' + session },
-        cache: 'no-store',
-        signal: AbortSignal.timeout(15000),
-      });
-      if (!response.ok) throw new Error('Invalid backend session');
-      actor = (await response.json()).user;
-      if (!actor || !['ADMIN', 'MENTOR', 'STUDENT'].includes(actor.role))
-        throw new Error('Invalid backend role');
-    } else {
-      const { requireActor } = await import('./auth');
-      actor = await requireActor({ cookies: cookieStore, headers: new Headers() });
-    }
+    const { requireActor } = await import('./auth');
+    actor = await requireActor({ cookies: cookieStore, headers: new Headers() });
   } catch {
     redirect('/login');
   }

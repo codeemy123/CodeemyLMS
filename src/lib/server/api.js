@@ -4,16 +4,30 @@ export class ApiError extends Error {
     this.status = status;
   }
 }
-export function assertOrigin(request) {
+function configuredOrigins(environment) {
+  return String(environment.LMS_PUBLIC_ORIGINS || '')
+    .split(',')
+    .map((value) => value.trim().replace(/\/$/, ''))
+    .filter((value) => {
+      try {
+        return new URL(value).origin === value;
+      } catch {
+        return false;
+      }
+    });
+}
+
+export function assertOrigin(request, environment = process.env) {
   const origin = request.headers.get('origin');
-  const host = request.headers.get('host') || new URL(request.url).host;
   try {
     if (!origin) throw new Error();
     const source = new URL(origin);
-    const backendHost = 'codeemy-lms-796236466632.asia-south1.run.app';
-    const publicOrigins = ['https://lerno.codeemy.in', 'https://learnoin.netlify.app'];
-    const trustedProxyOrigin = host === backendHost && publicOrigins.includes(origin);
-    if (source.host !== host && !trustedProxyOrigin) throw new Error();
+    if (environment.NODE_ENV === 'production') {
+      if (!configuredOrigins(environment).includes(source.origin)) throw new Error();
+    } else {
+      const host = request.headers.get('host') || new URL(request.url).host;
+      if (source.host !== host) throw new Error();
+    }
   } catch {
     throw new ApiError(403, 'A same-origin request is required.');
   }
