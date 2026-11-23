@@ -1,74 +1,142 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertOrigin, uuid, numeric, roleAllowed, jsonBody } from '../src/lib/server/api.js';
-import { courseScope, sessionScope, evaluateSubmission } from '../src/lib/server/data-access.js';
+
+import {
+  assertOrigin,
+  uuid,
+  numeric,
+  roleAllowed,
+  jsonBody,
+} from '../src/lib/server/api.js';
+
+import {
+  courseScope,
+  sessionScope,
+  evaluateSubmission,
+} from '../src/lib/server/data-access.js';
+
+const testEnvironment = {
+  NODE_ENV: 'test',
+};
+
+const productionEnvironment = {
+  NODE_ENV: 'production',
+  LMS_PUBLIC_ORIGINS:
+    'https://lerno.codeemy.in,https://learnoin.netlify.app',
+};
+
 test('database writes reject missing, malformed and cross-site origins', () => {
-  for (const origin of [undefined, 'bad', 'https://other.example'])
+  for (const origin of [undefined, 'bad', 'https://other.example']) {
     assert.throws(
       () =>
         assertOrigin(
           new Request('https://lms.example/api/courses', {
-            headers: origin ? { origin, host: 'lms.example' } : { host: 'lms.example' },
+            headers: origin
+              ? { origin, host: 'lms.example' }
+              : { host: 'lms.example' },
           }),
+          testEnvironment,
         ),
       { status: 403 },
     );
+  }
+
   assert.doesNotThrow(() =>
     assertOrigin(
       new Request('https://lms.example/api/courses', {
-        headers: { origin: 'https://lms.example', host: 'lms.example' },
+        headers: {
+          origin: 'https://lms.example',
+          host: 'lms.example',
+        },
       }),
+      testEnvironment,
     ),
   );
 });
+
 test('Cloud Run permits only the exact public LMS origins through the proxy', () => {
   const host = 'codeemy-lms-796236466632.asia-south1.run.app';
-  for (const origin of ['https://lerno.codeemy.in', 'https://learnoin.netlify.app'])
+
+  for (const origin of [
+    'https://lerno.codeemy.in',
+    'https://learnoin.netlify.app',
+  ]) {
     assert.doesNotThrow(() =>
       assertOrigin(
-        new Request('https://' + host + '/api/auth/session', {
+        new Request(`https://${host}/api/auth/session`, {
           headers: { host, origin },
         }),
+        productionEnvironment,
       ),
     );
-  for (const origin of ['https://lerno.codeemy.in.evil.example', 'http://lerno.codeemy.in', 'null'])
+  }
+
+  for (const origin of [
+    'https://lerno.codeemy.in.evil.example',
+    'http://lerno.codeemy.in',
+    'null',
+    'https://other.example',
+  ]) {
     assert.throws(
       () =>
         assertOrigin(
-          new Request('https://' + host + '/api/auth/session', {
-            headers: { host, origin, 'x-forwarded-host': 'lerno.codeemy.in' },
+          new Request(`https://${host}/api/auth/session`, {
+            headers: {
+              host,
+              origin,
+              'x-forwarded-host': 'lerno.codeemy.in',
+            },
           }),
+          productionEnvironment,
         ),
       { status: 403 },
     );
+  }
+});
+
+test('database policy derives course/session access from the server actor ID', () => {
+  const student = { id: 'student-id', role: 'STUDENT' };
+  const mentor = { id: 'mentor-id', role: 'MENTOR' };
+
+  assert.equal(
+    courseScope(student).OR[0].enrollments.some.student_id,
+    'student-id',
+  );
+
+  assert.equal(courseScope(student).status, 'PUBLISHED');
+
+  assert.equal(
+    courseScope(mentor).OR[1].batches.some.mentor_id,
+    'mentor-id',
+  );
+
+  assert.equal(
+    sessionScope(student).batches.batch_members.some.student_id,
+    'student-id',
+  );
+
+  assert.deepEqual(sessionScope(mentor), {
+    OR: [
+      { mentor_id: 'mentor-id' },
+      { batches: { mentor_id: 'mentor-id' } },
+    ],
+  });
+
+  assert.deepEqual(courseScope({ role: 'ADMIN' }), {});
+
   assert.throws(
-    () =>
-      assertOrigin(
-        new Request('https://other.example/api/auth/session', {
-          headers: { host: 'other.example', origin: 'https://lerno.codeemy.in' },
-        }),
-      ),
+    () => roleAllowed(student, ['ADMIN', 'MENTOR']),
     { status: 403 },
   );
 });
 
-test('database policy derives course/session access from the server actor ID', () => {
-  const student = { id: 'student-id', role: 'STUDENT' },
-    mentor = { id: 'mentor-id', role: 'MENTOR' };
-  assert.equal(courseScope(student).OR[0].enrollments.some.student_id, 'student-id');
-  assert.equal(courseScope(student).status, 'PUBLISHED');
-  assert.equal(courseScope(mentor).OR[1].batches.some.mentor_id, 'mentor-id');
-  assert.equal(sessionScope(student).batches.batch_members.some.student_id, 'student-id');
-  assert.deepEqual(sessionScope(mentor), {
-    OR: [{ mentor_id: 'mentor-id' }, { batches: { mentor_id: 'mentor-id' } }],
-  });
-  assert.deepEqual(courseScope({ role: 'ADMIN' }), {});
-  assert.throws(() => roleAllowed(student, ['ADMIN', 'MENTOR']), { status: 403 });
-});
 test('database validation rejects invalid IDs, marks and non-object JSON', async () => {
   assert.throws(() => uuid('not-a-uuid'), { status: 400 });
-  for (const value of [NaN, Infinity, -1, 101, '90'])
+
+  for (const value of [NaN, Infinity, -1, 101, '90']) {
     assert.throws(() => numeric(value), { status: 400 });
+  }
+
   await assert.rejects(
     jsonBody(
       new Request('http://localhost', {
@@ -80,24 +148,45 @@ test('database validation rejects invalid IDs, marks and non-object JSON', async
     { status: 400 },
   );
 });
+
 test('a mentor cannot evaluate an unrelated student even when the course is visible', async () => {
   let updated = false;
+
   const db = {
     assignment_submissions: {
       findUnique: async () => ({
         student_id: 'other-student',
-        assignments: { course_id: 'course-id', batch_id: 'other-batch', total_marks: 100 },
+        assignments: {
+          course_id: 'course-id',
+          batch_id: 'other-batch',
+          total_marks: 100,
+        },
       }),
       update: async () => {
         updated = true;
       },
     },
-    courses: { findFirst: async () => ({ id: 'course-id' }) },
-    batch_members: { findFirst: async () => null },
+
+    courses: {
+      findFirst: async () => ({ id: 'course-id' }),
+    },
+
+    batch_members: {
+      findFirst: async () => null,
+    },
   };
+
   await assert.rejects(
-    evaluateSubmission(db, { id: 'mentor-id', role: 'MENTOR' }, 'assignment', 'id', 90, ''),
+    evaluateSubmission(
+      db,
+      { id: 'mentor-id', role: 'MENTOR' },
+      'assignment',
+      'id',
+      90,
+      '',
+    ),
     { status: 403 },
   );
+
   assert.equal(updated, false);
 });
