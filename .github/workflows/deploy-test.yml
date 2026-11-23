@@ -1,0 +1,40 @@
+
+name: CodeEmy CD Connection Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-ssh:
+    runs-on: windows-latest
+
+    steps:
+      - name: Test SSH connection to production server
+        shell: pwsh
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          $keyPath = "$env:RUNNER_TEMP\deploy_key"
+
+          $env:DEPLOY_SSH_KEY | Set-Content -Path $keyPath
+
+          icacls $keyPath /inheritance:r /grant:r "$($env:USERNAME):(R)" | Out-Null
+
+          ssh-keyscan -p $env:DEPLOY_PORT $env:DEPLOY_HOST |
+            Out-File "$env:USERPROFILE\.ssh\known_hosts" -Append
+
+          ssh -i $keyPath `
+            -p $env:DEPLOY_PORT `
+            -o StrictHostKeyChecking=yes `
+            -o BatchMode=yes `
+            "$env:DEPLOY_USER@$env:DEPLOY_HOST" `
+            "hostname"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "SSH connection test failed."
+          }
+
+          Remove-Item $keyPath -Force
