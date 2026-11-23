@@ -13,9 +13,6 @@ jobs:
   build-and-test:
     runs-on: windows-latest
 
-    env:
-      LMS_ADMIN_EMAILS: "info.codeemy@gmail.com"
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
