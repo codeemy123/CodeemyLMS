@@ -17,7 +17,7 @@ jobs:
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
-          $keyPath = "$env:RUNNER_TEMP\deploy_key"
+          $keyPath = Join-Path $env:GITHUB_WORKSPACE "deploy_key"
           $sshDirectory = "$env:USERPROFILE\.ssh"
           $knownHostsPath = "$sshDirectory\known_hosts"
 
