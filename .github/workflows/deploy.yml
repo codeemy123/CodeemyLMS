@@ -1,5 +1,5 @@
 
-name: CodeEmy LMS CI
+name: CodeEmy LMS CI/CD
 
 on:
   push:
@@ -37,3 +37,60 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+  deploy-production:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://api.lerno.codeemy.in
+
+    steps:
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Prepare production release
+        id: release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          set -e
+
+          output=$(ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\LMS\Backend\Deployments\scripts\prepare-release.ps1"' 2>&1)
+
+          echo "$output"
+
+          release_id=$(echo "$output" | sed -n 's/^Release ID: //p' | tail -n 1)
+
+          if [[ ! "$release_id" =~ ^[0-9]{8}-[0-9]{6}$ ]]; then
+            echo "Could not identify the release ID."
+            exit 1
+          fi
+
+          echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy production release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          RELEASE_ID: ${{ steps.release.outputs.release_id }}
+        run: |
+          set -e
+
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C:\LMS\Backend\Deployments\scripts\deploy.ps1' -ReleaseId '$RELEASE_ID'"
