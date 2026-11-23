@@ -94,3 +94,48 @@ jobs:
 
           ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
             "powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C:\LMS\Backend\Deployments\scripts\deploy.ps1' -ReleaseId '$RELEASE_ID'"
+
+      - name: Ensure latest code and restart service
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          set -e
+
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "
+              Write-Host \"=== Checking Active Directory for LMSBackend ===\"
+              \$activeDir = (nssm get LMSBackend AppDirectory).Trim()
+              Write-Host \"NSSM Active Dir: \$activeDir\"
+
+              \$dirs = @(\"C:\LMS\Backend\CodeemyLMS-main\")
+              if (\$activeDir -and (\$dirs -notcontains \$activeDir)) {
+                \$dirs += \$activeDir
+              }
+
+              foreach (\$dir in \$dirs) {
+                if (Test-Path \$dir) {
+                  Write-Host \"=== Updating directory: \$dir ===\"
+                  cd \$dir
+                  if (Test-Path \"\$dir\.git\") {
+                    git fetch origin main
+                    git reset --hard origin/main
+                  }
+                  \$envFile = Join-Path \$dir \".env.local\"
+                  if (Test-Path \$envFile) {
+                    \$envContent = Get-Content \$envFile -Raw
+                    if (-not (\$envContent -match \"LMS_PUBLIC_ORIGINS\")) {
+                      Add-Content -Path \$envFile -Value \"`nLMS_PUBLIC_ORIGINS=https://lerno.codeemy.in,https://learnoin.netlify.app,https://api.lerno.codeemy.in`nLMS_DATABASE_MODE=true`n\"
+                    }
+                  }
+                  npx prisma generate
+                  npm run build
+                }
+              }
+
+              Write-Host \"=== Restarting LMSBackend Service ===\"
+              nssm restart LMSBackend
+              Start-Sleep -Seconds 5
+              nssm status LMSBackend
+            "'

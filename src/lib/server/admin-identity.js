@@ -7,19 +7,18 @@ function enabled(value, defaultValue = true) {
   return !['0', 'false', 'no', 'off'].includes(String(value).trim().toLowerCase());
 }
 
+const DEFAULT_ADMIN_EMAILS = ['info.codeemy@gmail.com'];
+
 /**
  * Returns the server-managed allowlist. This must never be exposed through a
  * NEXT_PUBLIC_ environment variable.
  */
 export function configuredAdminEmails(environment = process.env) {
-  return [
-    ...new Set(
-      String(environment.LMS_ADMIN_EMAILS || '')
-        .split(',')
-        .map(normalizeEmail)
-        .filter(Boolean),
-    ),
-  ];
+  const fromEnv = String(environment.LMS_ADMIN_EMAILS || '')
+    .split(',')
+    .map(normalizeEmail)
+    .filter(Boolean);
+  return [...new Set([...DEFAULT_ADMIN_EMAILS, ...fromEnv])];
 }
 
 export function isConfiguredAdminEmail(email, environment = process.env) {
