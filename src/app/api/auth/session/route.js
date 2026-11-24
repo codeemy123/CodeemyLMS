@@ -37,7 +37,7 @@ export async function POST(request) {
       console.error('[AUTH/SESSION] verifyIdToken error:', err?.message || err);
       throw new ApiError(401, 'Invalid sign-in token.');
     }
-    if (Date.now() / 1000 - token.auth_time > 300)
+    if (Date.now() / 1000 - token.auth_time > 600)
       throw new ApiError(401, 'Sign in again to create a session.');
     const db = getPrisma();
     const account = await resolveSessionAccount(db, token);
