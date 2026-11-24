@@ -16,20 +16,35 @@ try {
 }
 
 Write-Host "============================================="
-Write-Host "=== 2. INSPECT HOSTERDADDY SCRIPTS ==="
+Write-Host "=== 2. UPDATE SHARED & SYSTEM CONFIGURATION ==="
 Write-Host "============================================="
-if (Test-Path "C:\LMS\Backend\Deployments\scripts\prepare-release.ps1") {
-    Write-Host "--- prepare-release.ps1 content ---"
-    Get-Content "C:\LMS\Backend\Deployments\scripts\prepare-release.ps1"
-} else {
-    Write-Host "prepare-release.ps1 not found"
+# 1. Update shared environment file if exists
+$sharedEnv = "C:\LMS\Backend\Deployments\shared\.env.local"
+if (Test-Path $sharedEnv) {
+    $sharedText = Get-Content $sharedEnv -Raw
+    $sharedAppend = ""
+    if ($sharedText -notmatch "LMS_PUBLIC_ORIGINS") {
+        $sharedAppend += "`nLMS_PUBLIC_ORIGINS=https://lerno.codeemy.in,https://learnoin.netlify.app,https://api.lerno.codeemy.in`n"
+    }
+    if ($sharedText -notmatch "LMS_ADMIN_EMAILS") {
+        $sharedAppend += "LMS_ADMIN_EMAILS=info.codeemy@gmail.com`n"
+    }
+    if ($sharedText -notmatch "LMS_DATABASE_MODE") {
+        $sharedAppend += "LMS_DATABASE_MODE=true`n"
+    }
+    if ($sharedText -notmatch "GOOGLE_APPLICATION_CREDENTIALS") {
+        $sharedAppend += "GOOGLE_APPLICATION_CREDENTIALS=C:\LMS\Backend\Deployments\shared\firebase-service-account.json`n"
+    }
+    if ($sharedAppend) {
+        Add-Content -Path $sharedEnv -Value $sharedAppend
+        Write-Host "Updated shared .env.local with configuration."
+    }
 }
-if (Test-Path "C:\LMS\Backend\Deployments\scripts\deploy.ps1") {
-    Write-Host "--- deploy.ps1 content ---"
-    Get-Content "C:\LMS\Backend\Deployments\scripts\deploy.ps1"
-} else {
-    Write-Host "deploy.ps1 not found"
-}
+
+# 2. Set system-wide environment variables for Windows Services
+[System.Environment]::SetEnvironmentVariable('GOOGLE_APPLICATION_CREDENTIALS', 'C:\LMS\Backend\Deployments\shared\firebase-service-account.json', 'Machine')
+[System.Environment]::SetEnvironmentVariable('LMS_ADMIN_EMAILS', 'info.codeemy@gmail.com', 'Machine')
+[System.Environment]::SetEnvironmentVariable('LMS_DATABASE_MODE', 'true', 'Machine')
 
 Write-Host "============================================="
 Write-Host "=== 3. SYNC REPOSITORY CODE ==="
@@ -56,7 +71,7 @@ if (-not (Test-Path "$targetDir\.git")) {
     git reset --hard origin/main
 }
 
-# If NSSM points to a different folder, copy updated source files there too
+# Also ensure active release directory has updated code
 if ($appDir -and ($appDir -ne $targetDir) -and (Test-Path $appDir)) {
     Write-Host "Copying updated files from $targetDir to active directory $appDir..."
     Get-ChildItem -Path $targetDir -Exclude ".env.local", "node_modules", ".next" | ForEach-Object {
@@ -86,6 +101,12 @@ foreach ($dir in $dirsToUpdate) {
         if ($envText -notmatch "LMS_ADMIN_EMAILS") {
             $appendContent += "LMS_ADMIN_EMAILS=info.codeemy@gmail.com`n"
         }
+        if ($envText -notmatch "LMS_DATABASE_MODE") {
+            $appendContent += "LMS_DATABASE_MODE=true`n"
+        }
+        if ($envText -notmatch "GOOGLE_APPLICATION_CREDENTIALS") {
+            $appendContent += "GOOGLE_APPLICATION_CREDENTIALS=C:\LMS\Backend\Deployments\shared\firebase-service-account.json`n"
+        }
         if ($appendContent) {
             Add-Content -Path $envFile -Value $appendContent
             Write-Host "Updated $envFile with configuration variables."
@@ -105,7 +126,71 @@ foreach ($dir in $dirsToUpdate) {
 }
 
 Write-Host "============================================="
-Write-Host "=== 4. RESTARTING NSSM LMSBACKEND SERVICE ==="
+Write-Host "=== 4. DATABASE CHECK & ADMIN PROVISIONING ==="
+Write-Host "============================================="
+# Execute direct Prisma database check in active directory
+if ($appDir -and (Test-Path $appDir)) {
+    Set-Location $appDir
+} else {
+    Set-Location $targetDir
+}
+
+$dbScript = @'
+const { PrismaClient } = require('./src/generated/prisma');
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('Connecting to database...');
+  try {
+    const users = await prisma.users.findMany({
+      select: { id: true, email: true, role: true, status: true, firebase_uid: true }
+    });
+    console.log(`Found ${users.length} users in database:`);
+    for (const u of users) {
+      console.log(`  - ${u.email} | role=${u.role} | status=${u.status} | uid=${u.firebase_uid}`);
+    }
+
+    // Ensure info.codeemy@gmail.com is provisioned as active ADMIN
+    const adminEmail = 'info.codeemy@gmail.com';
+    const existing = users.find(u => u.email.toLowerCase() === adminEmail);
+    if (existing) {
+      if (existing.role !== 'ADMIN' || existing.status !== 'ACTIVE') {
+        const updated = await prisma.users.update({
+          where: { id: existing.id },
+          data: { role: 'ADMIN', status: 'ACTIVE' }
+        });
+        console.log(`Updated ${adminEmail} to ADMIN:`, updated);
+      } else {
+        console.log(`${adminEmail} is already active ADMIN.`);
+      }
+    } else {
+      const created = await prisma.users.create({
+        data: {
+          email: adminEmail,
+          full_name: 'Anapty CodeEmy Technologies',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+          firebase_uid: 'admin-' + Date.now()
+        }
+      });
+      console.log(`Created admin user ${adminEmail}:`, created);
+    }
+  } catch (err) {
+    console.error('Database provisioning error:', err.message);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+main();
+'@
+
+Set-Content -Path "check-db.js" -Value $dbScript
+node check-db.js
+Remove-Item -Force "check-db.js"
+
+Write-Host "============================================="
+Write-Host "=== 5. RESTARTING NSSM LMSBACKEND SERVICE ==="
 Write-Host "============================================="
 nssm restart LMSBackend
 Start-Sleep -Seconds 6
@@ -113,6 +198,10 @@ $status = nssm status LMSBackend
 Write-Host "LMSBackend status: $status"
 
 Write-Host "============================================="
-Write-Host "=== 5. VERIFYING LOCAL SERVICE ENDPOINT ==="
+Write-Host "=== 6. VERIFYING LOCAL SERVICE ENDPOINTS ==="
 Write-Host "============================================="
+Write-Host "--- Testing /api/auth/config ---"
+curl.exe -s http://127.0.0.1:3000/api/auth/config
+Write-Host ""
+Write-Host "--- Testing /api/auth/session Origin Check ---"
 curl.exe -i -X POST http://127.0.0.1:3000/api/auth/session -H "Origin: https://lerno.codeemy.in" -H "Content-Type: application/json" -d "{}"

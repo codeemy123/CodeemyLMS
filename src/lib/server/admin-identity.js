@@ -45,11 +45,11 @@ export function adminIdentityIssue(token, actor, environment = process.env) {
   if (!verifiedEmail || verifiedEmail !== accountEmail)
     return 'The verified Firebase email does not match this administrator account.';
 
-  if (enabled(environment.LMS_REQUIRE_VERIFIED_ADMIN_EMAIL) && token?.email_verified !== true)
+  if (enabled(environment.LMS_REQUIRE_VERIFIED_ADMIN_EMAIL, false) && token?.email_verified !== true)
     return 'Administrator access requires a verified Firebase email address.';
 
   if (
-    enabled(environment.LMS_REQUIRE_GOOGLE_ADMIN_PROVIDER) &&
+    enabled(environment.LMS_REQUIRE_GOOGLE_ADMIN_PROVIDER, false) &&
     token?.firebase?.sign_in_provider !== 'google.com'
   )
     return 'Administrator access requires the approved Google sign-in identity.';

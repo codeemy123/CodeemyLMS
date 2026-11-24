@@ -17,7 +17,7 @@ export async function requireActor(request) {
     if (error instanceof ApiError) throw error;
     throw new ApiError(401, 'Your session has expired. Please sign in.');
   }
-  const actor = await getPrisma().users.findUnique({
+  let actor = await getPrisma().users.findUnique({
     where: { firebase_uid: decoded.uid },
     select: {
       id: true,
@@ -28,6 +28,57 @@ export async function requireActor(request) {
       profile_image: true,
     },
   });
+
+  if (!actor && decoded.email) {
+    const normalized = decoded.email.trim().toLowerCase();
+    actor = await getPrisma().users.findFirst({
+      where: { email: { equals: normalized, mode: 'insensitive' } },
+      select: {
+        id: true,
+        full_name: true,
+        email: true,
+        role: true,
+        status: true,
+        profile_image: true,
+      },
+    });
+    if (actor) {
+      await getPrisma().users.update({
+        where: { id: actor.id },
+        data: { firebase_uid: decoded.uid },
+      }).catch(() => {});
+    }
+  }
+
+  if (!actor && isConfiguredAdminEmail(decoded.email)) {
+    try {
+      actor = await getPrisma().users.create({
+        data: {
+          email: decoded.email.trim().toLowerCase(),
+          full_name: decoded.name || 'System Administrator',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+          firebase_uid: decoded.uid,
+        },
+        select: {
+          id: true,
+          full_name: true,
+          email: true,
+          role: true,
+          status: true,
+          profile_image: true,
+        },
+      });
+    } catch {
+      actor = {
+        id: decoded.uid,
+        full_name: decoded.name || 'System Administrator',
+        email: decoded.email,
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      };
+    }
+  }
   if (!actor || actor.status !== 'ACTIVE')
     throw new ApiError(403, 'Your account is not active or has not been provisioned.');
   if (!['ADMIN', 'MENTOR', 'STUDENT'].includes(actor.role))

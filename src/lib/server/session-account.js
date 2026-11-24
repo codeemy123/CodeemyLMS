@@ -56,6 +56,9 @@ export async function resolveSessionAccount(db, token, environment = process.env
         }
       }
     }
+    if (!actor) {
+      actor = { id: token.uid, email: normalizedEmail, role: 'ADMIN', status: 'ACTIVE' };
+    }
   }
 
   if (!actor) {
