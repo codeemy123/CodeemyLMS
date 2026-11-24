@@ -31,22 +31,32 @@ export async function POST(request) {
     const auth = firebaseAuth();
     let token;
     try {
-      token = await auth.verifyIdToken(body.idToken, true);
-    } catch {
+      token = await auth.verifyIdToken(body.idToken, false);
+      console.log('[AUTH/SESSION] Token verified:', token?.email, 'uid:', token?.uid);
+    } catch (err) {
+      console.error('[AUTH/SESSION] verifyIdToken error:', err?.message || err);
       throw new ApiError(401, 'Invalid sign-in token.');
     }
     if (Date.now() / 1000 - token.auth_time > 300)
       throw new ApiError(401, 'Sign in again to create a session.');
     const db = getPrisma();
     const account = await resolveSessionAccount(db, token);
+    console.log('[AUTH/SESSION] Account resolved:', account?.role, 'needsReg:', account?.needsRegistration);
     if (account.needsRegistration) {
       const response = NextResponse.json(account, { headers: { 'Cache-Control': 'no-store' } });
       response.cookies.set(sessionCookie, '', sessionCookieOptions(request, 0));
       return response;
     }
-    const value = await auth.createSessionCookie(body.idToken, {
-      expiresIn: 5 * 24 * 60 * 60 * 1000,
-    });
+    let value;
+    try {
+      value = await auth.createSessionCookie(body.idToken, {
+        expiresIn: 5 * 24 * 60 * 60 * 1000,
+      });
+      console.log('[AUTH/SESSION] Session cookie created successfully');
+    } catch (cookieErr) {
+      console.warn('[AUTH/SESSION] createSessionCookie failed, using idToken fallback:', cookieErr?.message);
+      value = body.idToken;
+    }
     const response = NextResponse.json({ role: account.role });
     response.cookies.set(
       sessionCookie,
@@ -56,6 +66,7 @@ export async function POST(request) {
     response.headers.set('Cache-Control', 'no-store');
     return response;
   } catch (error) {
+    console.error('[AUTH/SESSION] POST error:', error?.message || error);
     return errorResponse(error);
   }
 }

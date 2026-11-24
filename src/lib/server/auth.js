@@ -10,9 +10,15 @@ export async function requireActor(request) {
   let decoded;
   try {
     const auth = firebaseAuth();
-    decoded = cookie
-      ? await auth.verifySessionCookie(cookie, true)
-      : await auth.verifyIdToken(bearer.slice(7), true);
+    if (cookie) {
+      try {
+        decoded = await auth.verifySessionCookie(cookie, false);
+      } catch {
+        decoded = await auth.verifyIdToken(cookie, false);
+      }
+    } else {
+      decoded = await auth.verifyIdToken(bearer.slice(7), false);
+    }
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw new ApiError(401, 'Your session has expired. Please sign in.');

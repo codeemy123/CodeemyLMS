@@ -15,6 +15,12 @@ try {
     Write-Host "NSSM query warning: $_"
 }
 
+# Ensure NSSM service logs stdout and stderr to disk
+$logDir = "C:\LMS\Backend\logs"
+if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+nssm set LMSBackend AppStdout "$logDir\service-stdout.log"
+nssm set LMSBackend AppStderr "$logDir\service-stderr.log"
+
 Write-Host "============================================="
 Write-Host "=== 2. UPDATE SHARED & SYSTEM CONFIGURATION ==="
 Write-Host "============================================="
@@ -35,6 +41,9 @@ if (Test-Path $sharedEnv) {
     if ($sharedText -notmatch "GOOGLE_APPLICATION_CREDENTIALS") {
         $sharedAppend += "GOOGLE_APPLICATION_CREDENTIALS=C:\LMS\Backend\Deployments\shared\firebase-service-account.json`n"
     }
+    if ($sharedText -match "cloudsql" -or $sharedText -notmatch "DATABASE_URL") {
+        $sharedAppend += "DATABASE_URL=postgresql://codeemy_app:ThisMyApp123@127.0.0.1:5432/codeemy_lms`n"
+    }
     if ($sharedAppend) {
         Add-Content -Path $sharedEnv -Value $sharedAppend
         Write-Host "Updated shared .env.local with configuration."
@@ -45,6 +54,7 @@ if (Test-Path $sharedEnv) {
 [System.Environment]::SetEnvironmentVariable('GOOGLE_APPLICATION_CREDENTIALS', 'C:\LMS\Backend\Deployments\shared\firebase-service-account.json', 'Machine')
 [System.Environment]::SetEnvironmentVariable('LMS_ADMIN_EMAILS', 'info.codeemy@gmail.com', 'Machine')
 [System.Environment]::SetEnvironmentVariable('LMS_DATABASE_MODE', 'true', 'Machine')
+[System.Environment]::SetEnvironmentVariable('DATABASE_URL', 'postgresql://codeemy_app:ThisMyApp123@127.0.0.1:5432/codeemy_lms', 'Machine')
 
 Write-Host "============================================="
 Write-Host "=== 3. SYNC REPOSITORY CODE ==="
@@ -107,6 +117,9 @@ foreach ($dir in $dirsToUpdate) {
         if ($envText -notmatch "GOOGLE_APPLICATION_CREDENTIALS") {
             $appendContent += "GOOGLE_APPLICATION_CREDENTIALS=C:\LMS\Backend\Deployments\shared\firebase-service-account.json`n"
         }
+        if ($envText -match "cloudsql" -or $envText -notmatch "DATABASE_URL") {
+            $appendContent += "DATABASE_URL=postgresql://codeemy_app:ThisMyApp123@127.0.0.1:5432/codeemy_lms`n"
+        }
         if ($appendContent) {
             Add-Content -Path $envFile -Value $appendContent
             Write-Host "Updated $envFile with configuration variables."
@@ -145,48 +158,35 @@ if ($psqlPath -and (Test-Path $psqlPath)) {
 
     Write-Host "Verification after upsert:"
     & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT id, email, role, status, firebase_uid FROM users WHERE email = 'info.codeemy@gmail.com';"
-} else {
-    Write-Host "psql.exe not found at $psqlPath. Falling back to Node.js database update..."
-    $dbScript = @'
-import { getPrisma } from './src/lib/prisma.js';
-
-async function main() {
-  try {
-    const prisma = getPrisma();
-    const existing = await prisma.users.findFirst({
-      where: { email: { equals: 'info.codeemy@gmail.com', mode: 'insensitive' } }
-    });
-    if (existing) {
-      await prisma.users.update({
-        where: { id: existing.id },
-        data: { role: 'ADMIN', status: 'ACTIVE' }
-      });
-      console.log('Updated existing user to ADMIN.');
-    } else {
-      await prisma.users.create({
-        data: {
-          email: 'info.codeemy@gmail.com',
-          full_name: 'Anapty CodeEmy Technologies',
-          role: 'ADMIN',
-          status: 'ACTIVE',
-          firebase_uid: 'admin-seed-uid'
-        }
-      });
-      console.log('Created admin user in database.');
-    }
-  } catch (e) {
-    console.error('Node DB script error:', e.message);
-  }
-}
-main();
-'@
-    Set-Content -Path "check-db.mjs" -Value $dbScript
-    node check-db.mjs
-    Remove-Item -Force "check-db.mjs"
 }
 
 Write-Host "============================================="
-Write-Host "=== 5. RESTARTING NSSM LMSBACKEND SERVICE ==="
+Write-Host "=== 5. TESTING NODE RUNTIME PRISMA & FIREBASE ==="
+Write-Host "============================================="
+if ($appDir -and (Test-Path $appDir)) { Set-Location $appDir } else { Set-Location $targetDir }
+$runtimeTest = @'
+import { getPrisma } from './src/lib/prisma.js';
+import { firebaseAuth } from './src/lib/server/firebase.js';
+
+async function test() {
+  console.log('Testing Prisma...');
+  const prisma = getPrisma();
+  const count = await prisma.users.count();
+  console.log('Prisma test success, users count:', count);
+
+  console.log('Testing Firebase Auth...');
+  const auth = firebaseAuth();
+  console.log('Firebase app initialized:', auth.app.name, 'project:', auth.app.options.projectId);
+}
+
+test().catch(err => console.error('Test error:', err));
+'@
+Set-Content -Path "test-runtime.mjs" -Value $runtimeTest
+node test-runtime.mjs
+Remove-Item -Force "test-runtime.mjs"
+
+Write-Host "============================================="
+Write-Host "=== 6. RESTARTING NSSM LMSBACKEND SERVICE ==="
 Write-Host "============================================="
 nssm restart LMSBackend
 Start-Sleep -Seconds 6
@@ -194,10 +194,15 @@ $status = nssm status LMSBackend
 Write-Host "LMSBackend status: $status"
 
 Write-Host "============================================="
-Write-Host "=== 6. VERIFYING LOCAL SERVICE ENDPOINTS ==="
+Write-Host "=== 7. VERIFYING LOCAL SERVICE ENDPOINTS ==="
 Write-Host "============================================="
 Write-Host "--- Testing /api/auth/config ---"
 curl.exe -s http://127.0.0.1:3000/api/auth/config
 Write-Host ""
 Write-Host "--- Testing /api/auth/session Origin Check ---"
 curl.exe -i -X POST http://127.0.0.1:3000/api/auth/session -H "Origin: https://lerno.codeemy.in" -H "Content-Type: application/json" -d "{}"
+
+if (Test-Path "$logDir\service-stderr.log") {
+    Write-Host "--- Recent Service Stderr (last 20 lines) ---"
+    Get-Content "$logDir\service-stderr.log" -Tail 20
+}

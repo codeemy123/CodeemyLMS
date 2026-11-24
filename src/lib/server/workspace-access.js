@@ -11,7 +11,8 @@ export const requireWorkspaceRole = cache(async function requireWorkspaceRole(ro
     const cookieStore = await cookies();
     const { requireActor } = await import('./auth');
     actor = await requireActor({ cookies: cookieStore, headers: new Headers() });
-  } catch {
+  } catch (err) {
+    console.error('[WORKSPACE_ROLE_ERROR]', err?.message || err);
     redirect('/login');
   }
   if (actor.role !== role) redirect('/' + actor.role.toLowerCase() + '/dashboard');
