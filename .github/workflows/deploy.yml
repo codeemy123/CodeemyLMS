@@ -95,12 +95,14 @@ jobs:
           ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
             "powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C:\LMS\Backend\Deployments\scripts\deploy.ps1' -ReleaseId '$RELEASE_ID'"
 
-      - name: Force update and restart LMSBackend
+      - name: Sync latest code, build, and restart LMSBackend
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
         run: |
+          set -e
+          scp -P "$DEPLOY_PORT" scripts/sync-vps.ps1 "$DEPLOY_USER@$DEPLOY_HOST:C:/LMS/Backend/sync-vps.ps1"
           ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "cmd.exe /c \"cd /d C:\LMS\Backend\CodeemyLMS-main && git pull origin main && npm run build && nssm restart LMSBackend\""
+            "powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C:\LMS\Backend\sync-vps.ps1'"
 
