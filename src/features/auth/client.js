@@ -40,13 +40,7 @@ export async function login(email, password, google = false) {
   const auth = await clientAuth();
   try {
     const credential = await signInWithEmailAndPassword(auth, email, password);
-    const response = await fetch('/api/auth/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken: await credential.user.getIdToken() }),
-    });
-    const data = await readAuthResponse(response);
-    if (!response.ok) throw new Error(data.error || 'Unable to create session.');
+    const data = await createServerSession(credential.user);
     if (!['ADMIN', 'MENTOR', 'STUDENT'].includes(data.role))
       throw new Error('Account role is invalid.');
     return '/' + data.role.toLowerCase() + '/dashboard';
@@ -61,13 +55,7 @@ export async function googleAccess() {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     const credential = await signInWithPopup(auth, provider);
-    const response = await fetch('/api/auth/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken: await credential.user.getIdToken() }),
-    });
-    const data = await readAuthResponse(response);
-    if (!response.ok) throw new Error(data.error || 'Unable to sign in.');
+    const data = await createServerSession(credential.user);
     if (data.needsRegistration === true) {
       completingRegistration = true;
       return { needsRegistration: true, profile: data.profile };
@@ -78,6 +66,25 @@ export async function googleAccess() {
   } finally {
     if (!completingRegistration) await signOut(auth);
   }
+}
+
+async function createServerSession(user) {
+  // Force a fresh Firebase token after either popup or password authentication.
+  // This avoids sending an empty/stale token during the immediate post-login request.
+  const idToken = await user.getIdToken(true);
+  if (typeof idToken !== 'string' || !idToken.trim())
+    throw new Error('Google sign-in did not return an identity token. Please try again.');
+
+  const response = await fetch('/api/auth/session', {
+    method: 'POST',
+    credentials: 'same-origin',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ idToken }),
+  });
+  const data = await readAuthResponse(response);
+  if (!response.ok) throw new Error(data.error || 'Unable to create a secure session.');
+  return data;
 }
 export async function cancelGoogleRegistration() {
   await signOut(await clientAuth());

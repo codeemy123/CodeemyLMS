@@ -134,7 +134,14 @@ foreach ($dir in $dirsToUpdate) {
         Write-Host "Warning: $envFile not found in $dir"
     }
 
-    # 2. Run Prisma generate and Next.js build
+    # 2. Apply additive Prisma migrations. This never resets production data.
+    Write-Host "Applying Prisma migrations in $dir..."
+    cmd.exe /c "npx prisma migrate deploy"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Prisma migration failed; refusing to continue deployment."
+    }
+
+    # 3. Run Prisma generate and Next.js build
     Write-Host "Generating Prisma client in $dir..."
     cmd.exe /c "npx prisma generate"
     
