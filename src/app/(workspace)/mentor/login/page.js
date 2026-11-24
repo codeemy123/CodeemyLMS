@@ -1,5 +1,5 @@
-import LoginScreen from '@/features/auth/components/login-screen';
+import { redirect } from 'next/navigation';
 
 export default function MentorLoginPage() {
-  return <LoginScreen />;
+  redirect('/login');
 }
