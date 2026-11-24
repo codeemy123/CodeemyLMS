@@ -128,66 +128,62 @@ foreach ($dir in $dirsToUpdate) {
 Write-Host "============================================="
 Write-Host "=== 4. DATABASE CHECK & ADMIN PROVISIONING ==="
 Write-Host "============================================="
-# Execute direct Prisma database check in active directory
-if ($appDir -and (Test-Path $appDir)) {
-    Set-Location $appDir
-} else {
-    Set-Location $targetDir
+$env:PGPASSWORD = "ThisMyApp123"
+$psqlPath = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
+if (-not (Test-Path $psqlPath)) {
+    $psqlCmd = Get-Command psql -ErrorAction SilentlyContinue
+    if ($psqlCmd) { $psqlPath = $psqlCmd.Source }
 }
 
-$dbScript = @'
-const { PrismaClient } = require('./src/generated/prisma');
-const prisma = new PrismaClient();
+if ($psqlPath -and (Test-Path $psqlPath)) {
+    Write-Host "Found psql at $psqlPath"
+    Write-Host "Current users in database:"
+    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT id, email, role, status, firebase_uid FROM users;"
+
+    Write-Host "Upserting info.codeemy@gmail.com as ADMIN..."
+    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "INSERT INTO users (id, email, full_name, role, status, firebase_uid, created_at, updated_at) VALUES (gen_random_uuid(), 'info.codeemy@gmail.com', 'Anapty CodeEmy Technologies', 'ADMIN', 'ACTIVE', 'admin-seed-uid', NOW(), NOW()) ON CONFLICT (email) DO UPDATE SET role = 'ADMIN', status = 'ACTIVE';"
+
+    Write-Host "Verification after upsert:"
+    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT id, email, role, status, firebase_uid FROM users WHERE email = 'info.codeemy@gmail.com';"
+} else {
+    Write-Host "psql.exe not found at $psqlPath. Falling back to Node.js database update..."
+    $dbScript = @'
+import { getPrisma } from './src/lib/prisma.js';
 
 async function main() {
-  console.log('Connecting to database...');
   try {
-    const users = await prisma.users.findMany({
-      select: { id: true, email: true, role: true, status: true, firebase_uid: true }
+    const prisma = getPrisma();
+    const existing = await prisma.users.findFirst({
+      where: { email: { equals: 'info.codeemy@gmail.com', mode: 'insensitive' } }
     });
-    console.log(`Found ${users.length} users in database:`);
-    for (const u of users) {
-      console.log(`  - ${u.email} | role=${u.role} | status=${u.status} | uid=${u.firebase_uid}`);
-    }
-
-    // Ensure info.codeemy@gmail.com is provisioned as active ADMIN
-    const adminEmail = 'info.codeemy@gmail.com';
-    const existing = users.find(u => u.email.toLowerCase() === adminEmail);
     if (existing) {
-      if (existing.role !== 'ADMIN' || existing.status !== 'ACTIVE') {
-        const updated = await prisma.users.update({
-          where: { id: existing.id },
-          data: { role: 'ADMIN', status: 'ACTIVE' }
-        });
-        console.log(`Updated ${adminEmail} to ADMIN:`, updated);
-      } else {
-        console.log(`${adminEmail} is already active ADMIN.`);
-      }
+      await prisma.users.update({
+        where: { id: existing.id },
+        data: { role: 'ADMIN', status: 'ACTIVE' }
+      });
+      console.log('Updated existing user to ADMIN.');
     } else {
-      const created = await prisma.users.create({
+      await prisma.users.create({
         data: {
-          email: adminEmail,
+          email: 'info.codeemy@gmail.com',
           full_name: 'Anapty CodeEmy Technologies',
           role: 'ADMIN',
           status: 'ACTIVE',
-          firebase_uid: 'admin-' + Date.now()
+          firebase_uid: 'admin-seed-uid'
         }
       });
-      console.log(`Created admin user ${adminEmail}:`, created);
+      console.log('Created admin user in database.');
     }
-  } catch (err) {
-    console.error('Database provisioning error:', err.message);
-  } finally {
-    await prisma.$disconnect();
+  } catch (e) {
+    console.error('Node DB script error:', e.message);
   }
 }
-
 main();
 '@
-
-Set-Content -Path "check-db.js" -Value $dbScript
-node check-db.js
-Remove-Item -Force "check-db.js"
+    Set-Content -Path "check-db.mjs" -Value $dbScript
+    node check-db.mjs
+    Remove-Item -Force "check-db.mjs"
+}
 
 Write-Host "============================================="
 Write-Host "=== 5. RESTARTING NSSM LMSBACKEND SERVICE ==="
