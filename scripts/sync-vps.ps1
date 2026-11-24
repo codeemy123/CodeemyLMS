@@ -40,11 +40,9 @@ if (-not (Test-Path "$targetDir\.git")) {
     $tempDir = "C:\LMS\Backend\temp_repo"
     if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir }
     git clone https://github.com/codeemy123/CodeemyLMS.git $tempDir
-    # Copy all updated files except .env.local
     Get-ChildItem -Path $tempDir -Exclude ".env.local" | ForEach-Object {
         Copy-Item -Path $_.FullName -Destination $targetDir -Recurse -Force
     }
-    # Also copy .git directory
     if (Test-Path "$tempDir\.git") {
         Copy-Item -Path "$tempDir\.git" -Destination "$targetDir\.git" -Recurse -Force
     }
@@ -58,7 +56,14 @@ if (-not (Test-Path "$targetDir\.git")) {
     git reset --hard origin/main
 }
 
-# Determine all directories that need the update (both CodeemyLMS-main and NSSM active directory)
+# If NSSM points to a different folder, copy updated source files there too
+if ($appDir -and ($appDir -ne $targetDir) -and (Test-Path $appDir)) {
+    Write-Host "Copying updated files from $targetDir to active directory $appDir..."
+    Get-ChildItem -Path $targetDir -Exclude ".env.local", "node_modules", ".next" | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $appDir -Recurse -Force
+    }
+}
+
 $dirsToUpdate = @($targetDir)
 if ($appDir -and ($dirsToUpdate -notcontains $appDir) -and (Test-Path $appDir)) {
     $dirsToUpdate += $appDir
