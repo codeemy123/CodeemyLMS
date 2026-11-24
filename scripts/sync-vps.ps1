@@ -1,5 +1,9 @@
 $ErrorActionPreference = "Continue"
 
+# This is the sole official administrator identity. Keep it server-side; it is
+# deliberately never sourced from a NEXT_PUBLIC_* variable.
+$officialAdminEmail = "info.codeemy@gmail.com"
+
 Write-Host "============================================="
 Write-Host "=== 1. CHECK NSSM SERVICE CONFIGURATION ==="
 Write-Host "============================================="
@@ -33,7 +37,7 @@ if (Test-Path $sharedEnv) {
         $sharedAppend += "`nLMS_PUBLIC_ORIGINS=https://lerno.codeemy.in,https://learnoin.netlify.app,https://api.lerno.codeemy.in`n"
     }
     if ($sharedText -notmatch "LMS_ADMIN_EMAILS") {
-        $sharedAppend += "LMS_ADMIN_EMAILS=info.codeemy@gmail.com`n"
+        $sharedAppend += "LMS_ADMIN_EMAILS=$officialAdminEmail`n"
     }
     if ($sharedText -notmatch "LMS_DATABASE_MODE") {
         $sharedAppend += "LMS_DATABASE_MODE=true`n"
@@ -52,7 +56,7 @@ if (Test-Path $sharedEnv) {
 
 # 2. Set system-wide environment variables for Windows Services
 [System.Environment]::SetEnvironmentVariable('GOOGLE_APPLICATION_CREDENTIALS', 'C:\LMS\Backend\Deployments\shared\firebase-service-account.json', 'Machine')
-[System.Environment]::SetEnvironmentVariable('LMS_ADMIN_EMAILS', 'info.codeemy@gmail.com', 'Machine')
+[System.Environment]::SetEnvironmentVariable('LMS_ADMIN_EMAILS', $officialAdminEmail, 'Machine')
 [System.Environment]::SetEnvironmentVariable('LMS_DATABASE_MODE', 'true', 'Machine')
 [System.Environment]::SetEnvironmentVariable('DATABASE_URL', 'postgresql://codeemy_app:ThisMyApp123@127.0.0.1:5432/codeemy_lms', 'Machine')
 
@@ -109,7 +113,7 @@ foreach ($dir in $dirsToUpdate) {
             $appendContent += "`nLMS_PUBLIC_ORIGINS=https://lerno.codeemy.in,https://learnoin.netlify.app,https://api.lerno.codeemy.in`n"
         }
         if ($envText -notmatch "LMS_ADMIN_EMAILS") {
-            $appendContent += "LMS_ADMIN_EMAILS=info.codeemy@gmail.com`n"
+            $appendContent += "LMS_ADMIN_EMAILS=$officialAdminEmail`n"
         }
         if ($envText -notmatch "LMS_DATABASE_MODE") {
             $appendContent += "LMS_DATABASE_MODE=true`n"
@@ -139,7 +143,7 @@ foreach ($dir in $dirsToUpdate) {
 }
 
 Write-Host "============================================="
-Write-Host "=== 4. DATABASE CHECK & ADMIN PROVISIONING ==="
+Write-Host "=== 4. READ-ONLY DATABASE ADMIN VERIFICATION ==="
 Write-Host "============================================="
 $env:PGPASSWORD = "ThisMyApp123"
 $psqlPath = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
@@ -150,14 +154,11 @@ if (-not (Test-Path $psqlPath)) {
 
 if ($psqlPath -and (Test-Path $psqlPath)) {
     Write-Host "Found psql at $psqlPath"
-    Write-Host "Current users in database:"
-    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT id, email, role, status, firebase_uid FROM users;"
-
-    Write-Host "Upserting info.codeemy@gmail.com as ADMIN..."
-    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "INSERT INTO users (id, email, full_name, role, status, firebase_uid, created_at, updated_at) VALUES (gen_random_uuid(), 'info.codeemy@gmail.com', 'Anapty CodeEmy Technologies', 'ADMIN', 'ACTIVE', 'admin-seed-uid', NOW(), NOW()) ON CONFLICT (email) DO UPDATE SET role = 'ADMIN', status = 'ACTIVE';"
-
-    Write-Host "Verification after upsert:"
-    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT id, email, role, status, firebase_uid FROM users WHERE email = 'info.codeemy@gmail.com';"
+    Write-Host "Checking official administrator role without modifying the database..."
+    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT email, role, status, CASE WHEN firebase_uid IS NULL OR firebase_uid = '' THEN 'MISSING' ELSE 'PRESENT' END AS firebase_uid_mapping FROM users WHERE lower(email) = lower('$officialAdminEmail');"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Could not verify the official administrator record. No database changes were made."
+    }
 }
 
 Write-Host "============================================="

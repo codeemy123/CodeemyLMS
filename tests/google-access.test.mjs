@@ -84,6 +84,33 @@ test('existing approved official administrator is authorized as ADMIN', async ()
   assert.deepEqual(result, { role: 'ADMIN' });
 });
 
+test('official administrator is matched by email and gets the current Firebase UID', async () => {
+  const existingAdmin = {
+    id: 'admin-user',
+    email: adminGoogle.email,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    firebase_uid: 'stale-firebase-id',
+  };
+  let mappedUid;
+  const db = {
+    users: {
+      findUnique: async () => null,
+      findFirst: async () => existingAdmin,
+      update: async ({ where, data }) => {
+        assert.equal(where.id, existingAdmin.id);
+        mappedUid = data.firebase_uid;
+        return { ...existingAdmin, firebase_uid: data.firebase_uid };
+      },
+    },
+  };
+
+  const result = await resolveSessionAccount(db, adminGoogle, testEnvironment);
+
+  assert.equal(mappedUid, adminGoogle.uid);
+  assert.deepEqual(result, { role: 'ADMIN' });
+});
+
 test('existing approved Google users keep MENTOR and STUDENT roles from the database', async () => {
   for (const role of ['MENTOR', 'STUDENT']) {
     const actor = {
