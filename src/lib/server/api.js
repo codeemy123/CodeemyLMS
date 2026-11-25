@@ -106,12 +106,12 @@ export function errorResponse(error) {
   if (error.code === 'P2021' || error.code === 'P2022') {
     status = 503;
     message =
-      'The LMS database update is pending. Apply the latest Cloud SQL migration, then try again.';
+      'A required database table or column is missing. Run the latest database migration and try again.';
   }
   if (error.code === 'P1010') {
     status = 503;
     message =
-      'The LMS database user is missing permission for this workflow. Apply the latest Cloud SQL migration grants, then try again.';
+      'The database user is missing a required permission. Contact the administrator to apply the latest migration grants.';
   }
   if (error.message === 'DATABASE_NOT_CONFIGURED') {
     status = 503;

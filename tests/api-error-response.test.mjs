@@ -7,7 +7,7 @@ test('pending Prisma schema errors return an actionable service response', async
 
   assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), {
-    error: 'The LMS database update is pending. Apply the latest Cloud SQL migration, then try again.',
+    error: 'A required database table or column is missing. Run the latest database migration and try again.',
   });
 });
 
@@ -17,6 +17,6 @@ test('database permission errors return an actionable service response', async (
   assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), {
     error:
-      'The LMS database user is missing permission for this workflow. Apply the latest Cloud SQL migration grants, then try again.',
+      'The database user is missing a required permission. Contact the administrator to apply the latest migration grants.',
   });
 });

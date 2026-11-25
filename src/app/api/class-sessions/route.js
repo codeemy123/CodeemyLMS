@@ -162,7 +162,7 @@ export const POST = authenticated(async (request, _context, actor, db) => {
       });
       throw new ApiError(
         503,
-        'Zoom created the meeting, but CodeEmy could not save the class. Do not retry yet. Apply the latest Cloud SQL migration and database grants, then contact the administrator with this class title.',
+        'Zoom created the meeting, but CodeEmy could not save the class. Do not retry yet. Contact the administrator to apply the latest migration, then try again with the class title.',
       );
     }
     throw error;

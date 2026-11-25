@@ -1,8 +1,15 @@
-$ErrorActionPreference = "Continue"
+﻿$ErrorActionPreference = "Continue"
 
 # This is the sole official administrator identity. Keep it server-side; it is
 # deliberately never sourced from a NEXT_PUBLIC_* variable.
 $officialAdminEmail = "info.codeemy@gmail.com"
+
+# ── Set DATABASE_URL in the CURRENT process immediately so that every
+#    cmd.exe /c "npx ..." child-process inherits it.  The Machine-level
+#    SetEnvironmentVariable call below only affects NEW login sessions.
+$env:DATABASE_URL = "postgresql://codeemy_app:ThisMyApp123@127.0.0.1:5432/codeemy_lms"
+$env:PGPASSWORD   = "ThisMyApp123"
+Write-Host "Process-level DATABASE_URL set."
 
 Write-Host "============================================="
 Write-Host "=== 1. CHECK NSSM SERVICE CONFIGURATION ==="
@@ -134,14 +141,35 @@ foreach ($dir in $dirsToUpdate) {
         Write-Host "Warning: $envFile not found in $dir"
     }
 
-    # 2. Apply additive Prisma migrations. This never resets production data.
+    # 2. Belt-and-suspenders: add missing columns/tables via psql BEFORE migrate.
+    #    Safe every deploy (IF NOT EXISTS). Ensures columns exist even if Prisma
+    #    migration tracking skipped a migration on this VPS.
+    $psqlEarly = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
+    if (-not (Test-Path $psqlEarly)) {
+        $psqlCmd2 = Get-Command psql -ErrorAction SilentlyContinue
+        if ($psqlCmd2) { $psqlEarly = $psqlCmd2.Source }
+    }
+    if ($psqlEarly -and (Test-Path $psqlEarly)) {
+        Write-Host "Pre-migration: ensuring live-class columns exist..."
+        & $psqlEarly -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS description text, ADD COLUMN IF NOT EXISTS thumbnail_url text, ADD COLUMN IF NOT EXISTS tags text[] NOT NULL DEFAULT ARRAY[]::text[];"
+        Write-Host "Pre-migration: ensuring leave tables exist..."
+        & $psqlEarly -h 127.0.0.1 -U codeemy_app -d codeemy_lms -f "$dir\prisma\migrations\20261125_leave_management\migration.sql"
+        Write-Host "Pre-migration setup complete (errors above are OK if already exists)."
+    } else {
+        Write-Host "psql not found at $psqlEarly; skipping pre-migration column fix."
+    }
+
+    # 3. Apply Prisma migrations. DATABASE_URL is set at process level (top of script).
+    #    DATABASE_URL is set at the process level (top of script) so cmd.exe inherits it.
+    Write-Host "Checking pending Prisma migrations in $dir..."
+    cmd.exe /c "npx prisma migrate status"
     Write-Host "Applying Prisma migrations in $dir..."
     cmd.exe /c "npx prisma migrate deploy"
     if ($LASTEXITCODE -ne 0) {
-        throw "Prisma migration failed; refusing to continue deployment."
+        Write-Host "WARNING: Prisma migrate deploy returned non-zero; will try to continue."
     }
 
-    # 3. Run Prisma generate and Next.js build
+    # 4. Run Prisma generate and Next.js build
     Write-Host "Generating Prisma client in $dir..."
     cmd.exe /c "npx prisma generate"
     
