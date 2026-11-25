@@ -161,6 +161,8 @@ if (-not (Test-Path $psqlPath)) {
 
 if ($psqlPath -and (Test-Path $psqlPath)) {
     Write-Host "Found psql at $psqlPath"
+    Write-Host "Ensuring live class columns exist (idempotent)..."
+    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS description text, ADD COLUMN IF NOT EXISTS thumbnail_url text, ADD COLUMN IF NOT EXISTS tags text[] NOT NULL DEFAULT ARRAY[]::text[];"
     Write-Host "Checking official administrator role without modifying the database..."
     & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT email, role, status, CASE WHEN firebase_uid IS NULL OR firebase_uid = '' THEN 'MISSING' ELSE 'PRESENT' END AS firebase_uid_mapping FROM users WHERE lower(email) = lower('$officialAdminEmail');"
     if ($LASTEXITCODE -ne 0) {
@@ -181,13 +183,19 @@ async function test() {
   const prisma = getPrisma();
   const count = await prisma.users.count();
   console.log('Prisma test success, users count:', count);
+  console.log('Testing class_sessions:', await prisma.class_sessions.count());
+  console.log('Testing batches:', await prisma.batches.count());
+  console.log('Testing zoom_class_links:', await prisma.zoom_class_links.count());
+  console.log('Testing notifications:', await prisma.notifications.count());
+  console.log('Testing employees:', await prisma.employees.count());
+  console.log('Testing leave_applications:', await prisma.leave_applications.count());
 
   console.log('Testing Firebase Auth...');
   const auth = firebaseAuth();
   console.log('Firebase app initialized:', auth.app.name, 'project:', auth.app.options.projectId);
 }
 
-test().catch(err => console.error('Test error:', err));
+test().catch(err => { console.error('Test error:', err); process.exitCode = 1; });
 '@
 Set-Content -Path "test-runtime.mjs" -Value $runtimeTest
 node test-runtime.mjs
@@ -211,6 +219,6 @@ Write-Host "--- Testing /api/auth/session Origin Check ---"
 curl.exe -i -X POST http://127.0.0.1:3000/api/auth/session -H "Origin: https://lerno.codeemy.in" -H "Content-Type: application/json" -d "{}"
 
 if (Test-Path "$logDir\service-stderr.log") {
-    Write-Host "--- Recent Service Stderr (last 20 lines) ---"
-    Get-Content "$logDir\service-stderr.log" -Tail 20
+    Write-Host "--- Recent Service Stderr (last 50 lines) ---"
+    Get-Content "$logDir\service-stderr.log" -Tail 50
 }
