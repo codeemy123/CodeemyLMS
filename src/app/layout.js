@@ -7,6 +7,7 @@ import '@/styles/legal.css';
 import '@/styles/class-management.css';
 import '@/styles/announcements.css';
 import '@/styles/leave-management.css';
+import '@/styles/ess.css';
 export const metadata = {
   title: 'CodeEmy · Learning workspace',
   description: 'CodeEmy Edutech learning management workspace',

@@ -152,6 +152,7 @@ foreach ($dir in $dirsToUpdate) {
     }
     if ($psqlEarly -and (Test-Path $psqlEarly)) {
         $fixSql = "$dir\prisma\migrations\20261125_fix_missing_columns\migration.sql"
+        $essSql = "$dir\prisma\migrations\20261125_ess_permission_attendance\migration.sql"
         Write-Host "Pre-migration: applying idempotent column/table fix via postgres superuser..."
         # Try postgres superuser (no password needed on Windows peer/trust auth for local)
         $env:PGPASSWORD = ""
@@ -160,6 +161,14 @@ foreach ($dir in $dirsToUpdate) {
             Write-Host "postgres user failed; retrying with codeemy_app..."
             $env:PGPASSWORD = "ThisMyApp123"
             & $psqlEarly -h 127.0.0.1 -U codeemy_app -d codeemy_lms -f $fixSql
+        }
+        if (Test-Path $essSql) {
+            $env:PGPASSWORD = ""
+            & $psqlEarly -h 127.0.0.1 -U postgres -d codeemy_lms -f $essSql
+            if ($LASTEXITCODE -ne 0) {
+                $env:PGPASSWORD = "ThisMyApp123"
+                & $psqlEarly -h 127.0.0.1 -U codeemy_app -d codeemy_lms -f $essSql
+            }
         }
         $env:PGPASSWORD = "ThisMyApp123"
         Write-Host "Pre-migration setup complete (IF NOT EXISTS errors above are safe)."
