@@ -26,4 +26,4 @@ export const POST = leaveAdminAuthenticated(async (request, { params }, actor, d
     select: { id: true, status: true },
   });
   return { success: true, leave: updated };
-}, ['ADMIN']);
+}, ['MANAGER', 'ADMIN']);

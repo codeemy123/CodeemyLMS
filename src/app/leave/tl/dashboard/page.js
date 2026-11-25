@@ -3,6 +3,6 @@ import TLDashboard from '@/features/leave/components/tl-dashboard';
 export const runtime = 'nodejs';
 
 export default async function TLDashboardPage() {
-  const actor = await requireLeaveWorkspace(['TEAM_LEADER', 'ADMIN']);
+  const actor = await requireLeaveWorkspace(['TEAM_LEADER', 'MANAGER', 'ADMIN']);
   return <TLDashboard actor={actor} />;
 }

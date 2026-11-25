@@ -3,6 +3,6 @@ import AdminLeaveDashboard from '@/features/leave/components/admin-leave-dashboa
 export const runtime = 'nodejs';
 
 export default async function AdminLeaveDashboardPage() {
-  const actor = await requireLeaveWorkspace(['ADMIN']);
+  const actor = await requireLeaveWorkspace(['MANAGER', 'ADMIN']);
   return <AdminLeaveDashboard actor={actor} />;
 }

@@ -63,7 +63,7 @@ export async function requireLeaveActor(request) {
  * Allows either a Leave-portal actor with one of `allowedRoles`, OR an LMS Admin
  * authenticated via the main LMS session cookie (for /admin/leaves).
  */
-export async function requireLeaveOrLmsAdmin(request, allowedRoles = ['ADMIN']) {
+export async function requireLeaveOrLmsAdmin(request, allowedRoles = ['MANAGER', 'ADMIN']) {
   try {
     const actor = await requireLeaveActor(request);
     if (allowedRoles.includes(actor.emp_role)) return actor;
@@ -109,7 +109,7 @@ export function leaveAuthenticated(handler) {
   };
 }
 
-export function leaveAdminAuthenticated(handler, allowedRoles = ['ADMIN']) {
+export function leaveAdminAuthenticated(handler, allowedRoles = ['MANAGER', 'ADMIN']) {
   return async (request, context) => {
     try {
       const actor = await requireLeaveOrLmsAdmin(request, allowedRoles);
@@ -125,9 +125,13 @@ export function leaveAdminAuthenticated(handler, allowedRoles = ['ADMIN']) {
 }
 
 const roleDefaultPath = {
+  TRAINING_INTERN: '/leave/employee/dashboard',
+  INTERN: '/leave/employee/dashboard',
+  FULLTIME: '/leave/employee/dashboard',
   EMPLOYEE: '/leave/employee/dashboard',
   TEAM_LEADER: '/leave/tl/dashboard',
   HR: '/leave/hr/dashboard',
+  MANAGER: '/leave/admin/dashboard',
   ADMIN: '/leave/admin/dashboard',
 };
 

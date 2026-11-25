@@ -17,4 +17,4 @@ export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
     },
   });
   return { leaves };
-}, ['ADMIN']);
+}, ['MANAGER', 'ADMIN']);

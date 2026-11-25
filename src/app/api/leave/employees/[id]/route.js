@@ -2,7 +2,16 @@ import { leaveAdminAuthenticated } from '@/lib/server/leave-auth';
 import { assertOrigin, ApiError, jsonBody } from '@/lib/server/api';
 export const runtime = 'nodejs';
 
-const VALID_ROLES = ['EMPLOYEE', 'TEAM_LEADER', 'HR', 'ADMIN'];
+const VALID_ROLES = [
+  'TRAINING_INTERN',
+  'INTERN',
+  'FULLTIME',
+  'TEAM_LEADER',
+  'MANAGER',
+  'HR',
+  'ADMIN',
+  'EMPLOYEE',
+];
 const VALID_STATUSES = ['ACTIVE', 'INACTIVE'];
 
 export const PATCH = leaveAdminAuthenticated(async (request, { params }, _actor, db) => {
@@ -43,4 +52,4 @@ export const PATCH = leaveAdminAuthenticated(async (request, { params }, _actor,
     },
   });
   return { success: true, employee };
-}, ['HR', 'ADMIN']);
+}, ['HR', 'MANAGER', 'ADMIN']);

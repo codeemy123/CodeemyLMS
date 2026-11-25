@@ -4,7 +4,7 @@ import { ApiError } from '@/lib/server/api';
 export const runtime = 'nodejs';
 
 export const GET = leaveAuthenticated(async (_req, _ctx, actor, db) => {
-  if (!['TEAM_LEADER', 'HR', 'ADMIN'].includes(actor.emp_role))
+  if (!['TEAM_LEADER', 'HR', 'MANAGER', 'ADMIN'].includes(actor.emp_role))
     throw new ApiError(403, 'Only Team Leaders can view this.');
 
   // TL sees their team members' leaves. HR/Admin see all PENDING_TL leaves.

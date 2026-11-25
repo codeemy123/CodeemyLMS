@@ -32,4 +32,4 @@ export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
     },
   });
   return { leaves };
-}, ['HR', 'ADMIN']);
+}, ['HR', 'MANAGER', 'ADMIN']);

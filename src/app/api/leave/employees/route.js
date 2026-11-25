@@ -2,7 +2,16 @@ import { leaveAdminAuthenticated } from '@/lib/server/leave-auth';
 import { assertOrigin, ApiError, jsonBody } from '@/lib/server/api';
 export const runtime = 'nodejs';
 
-const VALID_ROLES = ['EMPLOYEE', 'TEAM_LEADER', 'HR', 'ADMIN'];
+const VALID_ROLES = [
+  'TRAINING_INTERN',
+  'INTERN',
+  'FULLTIME',
+  'TEAM_LEADER',
+  'MANAGER',
+  'HR',
+  'ADMIN',
+  'EMPLOYEE',
+];
 
 export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
   const employees = await db.employees.findMany({
@@ -21,7 +30,7 @@ export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
     },
   });
   return { employees };
-}, ['HR', 'ADMIN']);
+}, ['HR', 'MANAGER', 'ADMIN']);
 
 export const POST = leaveAdminAuthenticated(async (request, _ctx, _actor, db) => {
   assertOrigin(request);
@@ -65,4 +74,4 @@ export const POST = leaveAdminAuthenticated(async (request, _ctx, _actor, db) =>
     },
   });
   return { success: true, employee };
-}, ['HR', 'ADMIN']);
+}, ['HR', 'MANAGER', 'ADMIN']);

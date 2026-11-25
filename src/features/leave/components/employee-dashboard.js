@@ -2,6 +2,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CalendarDays, FileText, Clock, CheckCircle2, XCircle, Plus, LogOut, ChevronRight, Upload } from 'lucide-react';
 
+const ROLE_LABELS = {
+  TRAINING_INTERN: 'Training Intern',
+  INTERN: 'Intern',
+  FULLTIME: 'Fulltime',
+  EMPLOYEE: 'Employee',
+  TEAM_LEADER: 'TL',
+  HR: 'HR',
+  MANAGER: 'Manager',
+  ADMIN: 'Admin',
+};
+
 const STATUS_LABELS = {
   PENDING_TL: { label: 'Waiting for TL', color: '#f59e0b', bg: '#fef3c7' },
   PENDING_HR: { label: 'Waiting for HR', color: '#3b82f6', bg: '#dbeafe' },
@@ -176,7 +187,7 @@ export default function EmployeeDashboard({ actor }) {
       <header className="leave-topbar">
         <div className="leave-topbar-brand">
           <img src="/codeemy-technologies.png" alt="CodeEmy" width={120} />
-          <span className="leave-role-chip">Employee</span>
+          <span className="leave-role-chip">{ROLE_LABELS[actor.emp_role] || 'Employee'}</span>
         </div>
         <div className="leave-topbar-right">
           <span className="leave-user-name">👤 {actor.full_name}</span>

@@ -2,13 +2,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import { UserPlus, Users } from 'lucide-react';
 
-const ROLES = ['EMPLOYEE', 'TEAM_LEADER', 'HR', 'ADMIN'];
+const ROLES = [
+  { value: 'TRAINING_INTERN', label: 'Training Intern' },
+  { value: 'INTERN', label: 'Intern' },
+  { value: 'FULLTIME', label: 'Fulltime' },
+  { value: 'TEAM_LEADER', label: 'TL' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'HR', label: 'HR' },
+];
+
+const LEGACY_ROLES = {
+  ADMIN: 'Admin',
+  EMPLOYEE: 'Employee',
+};
 
 export default function EmployeesManager() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ fullName: '', email: '', empRole: 'EMPLOYEE', department: '', phone: '', teamLeaderId: '' });
+  const [form, setForm] = useState({ fullName: '', email: '', empRole: 'TRAINING_INTERN', department: '', phone: '', teamLeaderId: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,7 +34,7 @@ export default function EmployeesManager() {
 
   useEffect(() => { load(); }, [load]);
 
-  const teamLeaders = employees.filter(e => ['TEAM_LEADER', 'ADMIN'].includes(e.emp_role) && e.status === 'ACTIVE');
+  const teamLeaders = employees.filter(e => ['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(e.emp_role) && e.status === 'ACTIVE');
 
   async function addEmployee(e) {
     e.preventDefault();
@@ -36,7 +48,7 @@ export default function EmployeesManager() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to add employee.'); setBusy(false); return; }
       setAdding(false);
-      setForm({ fullName: '', email: '', empRole: 'EMPLOYEE', department: '', phone: '', teamLeaderId: '' });
+      setForm({ fullName: '', email: '', empRole: 'TRAINING_INTERN', department: '', phone: '', teamLeaderId: '' });
       load();
     } catch { setError('Network error.'); }
     finally { setBusy(false); }
@@ -98,7 +110,10 @@ export default function EmployeesManager() {
                       onChange={e => updateEmployee(emp.id, { empRole: e.target.value })}
                       style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 13 }}
                     >
-                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      {LEGACY_ROLES[emp.emp_role] && (
+                        <option value={emp.emp_role}>{LEGACY_ROLES[emp.emp_role]}</option>
+                      )}
+                      {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                     </select>
                   </td>
                   <td>
@@ -150,7 +165,7 @@ export default function EmployeesManager() {
                 <label className="leave-field">
                   <span>Role</span>
                   <select value={form.empRole} onChange={e => setForm(f => ({ ...f, empRole: e.target.value }))}>
-                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                   </select>
                 </label>
                 <label className="leave-field">

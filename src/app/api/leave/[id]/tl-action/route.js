@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 
 export const POST = leaveAuthenticated(async (request, { params }, actor, db) => {
   assertOrigin(request);
-  if (!['TEAM_LEADER', 'ADMIN'].includes(actor.emp_role))
+  if (!['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(actor.emp_role))
     throw new ApiError(403, 'Only Team Leaders can review at this stage.');
   const { id } = await params;
   const body = await jsonBody(request);
