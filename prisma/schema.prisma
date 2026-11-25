@@ -7,6 +7,80 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Leave Management System ──────────────────────────────────────────────────
+
+model employees {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firebase_uid   String    @unique @db.VarChar(255)
+  email          String    @unique @db.VarChar(255)
+  full_name      String    @db.VarChar(150)
+  phone          String?   @db.VarChar(20)
+  emp_role       String    @default("EMPLOYEE") @db.VarChar(20) // EMPLOYEE | TEAM_LEADER | HR | ADMIN
+  status         String    @default("ACTIVE") @db.VarChar(20)
+  team_leader_id String?   @db.Uuid
+  department     String?   @db.VarChar(100)
+  profile_image  String?
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+
+  team_leader        employees?          @relation("TLTeam", fields: [team_leader_id], references: [id], onDelete: SetNull)
+  team_members       employees[]         @relation("TLTeam")
+  leave_applications leave_applications[] @relation("EmployeeLeaves")
+  tl_reviews         leave_applications[] @relation("TLReviewer")
+  hr_reviews         leave_applications[] @relation("HRReviewer")
+  admin_reviews      leave_applications[] @relation("AdminReviewer")
+
+  @@index([emp_role], map: "idx_employees_role")
+  @@index([team_leader_id], map: "idx_employees_tl")
+}
+
+model leave_applications {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employee_id String   @db.Uuid
+  employee    employees @relation("EmployeeLeaves", fields: [employee_id], references: [id], onDelete: Cascade)
+
+  leave_type  String   @db.VarChar(30) // SICK | CASUAL | EMERGENCY | OTHER
+  from_date   DateTime @db.Date
+  to_date     DateTime @db.Date
+  subject     String   @db.VarChar(255)
+  reason      String
+  document_url String? // R2 file URL for medical cert etc.
+
+  status      String   @default("PENDING_TL") @db.VarChar(30)
+  // PENDING_TL | PENDING_HR | PENDING_ADMIN | APPROVED | REJECTED
+
+  // TL approval
+  tl_action        String?   @db.VarChar(10)
+  tl_note          String?
+  tl_reviewed_at   DateTime? @db.Timestamptz(6)
+  tl_reviewed_by   String?   @db.Uuid
+  tl_reviewer      employees? @relation("TLReviewer", fields: [tl_reviewed_by], references: [id], onDelete: SetNull)
+
+  // HR approval
+  hr_action        String?   @db.VarChar(10)
+  hr_note          String?
+  hr_reviewed_at   DateTime? @db.Timestamptz(6)
+  hr_reviewed_by   String?   @db.Uuid
+  hr_reviewer      employees? @relation("HRReviewer", fields: [hr_reviewed_by], references: [id], onDelete: SetNull)
+
+  // Admin/Mgmt approval
+  admin_action     String?   @db.VarChar(10)
+  admin_note       String?
+  admin_reviewed_at DateTime? @db.Timestamptz(6)
+  admin_reviewed_by String?  @db.Uuid
+  admin_reviewer   employees? @relation("AdminReviewer", fields: [admin_reviewed_by], references: [id], onDelete: SetNull)
+
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([employee_id], map: "idx_leave_employee")
+  @@index([status], map: "idx_leave_status")
+  @@index([tl_reviewed_by], map: "idx_leave_tl")
+  @@index([hr_reviewed_by], map: "idx_leave_hr")
+}
+
+// ─── End Leave Management System ──────────────────────────────────────────────
+
 model announcements {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title        String    @db.VarChar(255)

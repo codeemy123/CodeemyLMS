@@ -1,0 +1,156 @@
+/* ─── Leave Management System Styles ───────────────────────────────────────── */
+
+/* Shell & Layout */
+.leave-shell { min-height: 100vh; background: #f8fafc; font-family: 'DM Sans', system-ui, sans-serif; }
+.leave-topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 60px; background: #fff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10; }
+.leave-topbar-brand { display: flex; align-items: center; gap: 12px; }
+.leave-role-chip { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #dbeafe; color: #1d4ed8; letter-spacing: .5px; text-transform: uppercase; }
+.leave-role-chip.tl { background: #ede9fe; color: #7c3aed; }
+.leave-role-chip.hr { background: #fce7f3; color: #be185d; }
+.leave-role-chip.admin { background: #fef3c7; color: #d97706; }
+.leave-topbar-right { display: flex; align-items: center; gap: 16px; }
+.leave-user-name { font-size: 13px; color: #475569; }
+.leave-signout-btn { display: flex; align-items: center; gap: 6px; background: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 13px; color: #64748b; cursor: pointer; transition: all .15s; }
+.leave-signout-btn:hover { background: #f1f5f9; color: #ef4444; border-color: #fecaca; }
+.leave-main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+/* Page header */
+.leave-page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+.leave-page-header h1 { font-size: 24px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+.leave-page-header p { color: #64748b; margin: 0; font-size: 14px; }
+.leave-count-badge { background: #f59e0b; color: #fff; font-weight: 700; font-size: 14px; padding: 6px 16px; border-radius: 20px; }
+.leave-count-badge.hr { background: #db2777; }
+.leave-count-badge.admin { background: #7c3aed; }
+
+/* Stat cards */
+.leave-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.leave-stat-card { background: #fff; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 14px; border: 1px solid #e2e8f0; }
+.leave-stat-value { font-size: 28px; font-weight: 800; line-height: 1; }
+.leave-stat-label { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+/* Buttons */
+.leave-btn { display: inline-flex; align-items: center; gap: 7px; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.leave-btn.primary { background: #4f46e5; color: #fff; }
+.leave-btn.primary:hover:not(:disabled) { background: #4338ca; }
+.leave-btn.secondary { background: #f1f5f9; color: #475569; }
+.leave-btn.secondary:hover { background: #e2e8f0; }
+.leave-btn:disabled { opacity: .6; cursor: not-allowed; }
+.leave-btn.sm { padding: 7px 14px; font-size: 13px; }
+
+/* Table */
+.leave-table-wrap { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: auto; }
+.leave-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+.leave-table th { background: #f8fafc; padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #e2e8f0; }
+.leave-table td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #1e293b; vertical-align: middle; }
+.leave-table tr:last-child td { border-bottom: none; }
+.leave-table tr:hover td { background: #f8fafc; }
+.leave-view-btn { background: none; border: none; color: #6366f1; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.leave-view-btn:hover { background: #eef2ff; }
+
+/* Type chip */
+.leave-type-chip { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #e0f2fe; color: #0369a1; letter-spacing: .4px; }
+
+/* Cards grid (TL) */
+.leave-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.leave-review-card { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; display: flex; flex-direction: column; }
+.leave-review-card-header { display: flex; align-items: center; gap: 12px; padding: 16px; border-bottom: 1px solid #f1f5f9; }
+.leave-emp-avatar { width: 36px; height: 36px; border-radius: 50%; background: #818cf8; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+.leave-review-card-header > div { flex: 1; min-width: 0; }
+.leave-review-card-header strong { display: block; font-size: 14px; color: #0f172a; }
+.leave-review-card-header small { color: #94a3b8; font-size: 12px; }
+.leave-review-card-body { padding: 14px 16px; flex: 1; }
+.leave-review-subject { font-weight: 600; font-size: 14px; color: #1e293b; margin: 0 0 8px; }
+.leave-review-dates { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #64748b; margin-bottom: 8px; }
+.leave-review-reason { font-size: 13px; color: #475569; margin: 0; line-height: 1.5; }
+.leave-review-card-footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid #f1f5f9; background: #fafafa; }
+.leave-review-card-footer small { color: #94a3b8; font-size: 12px; }
+
+/* Modal */
+.leave-modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.leave-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+.leave-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid #e2e8f0; }
+.leave-modal-header h2 { margin: 0; font-size: 18px; color: #0f172a; }
+.leave-modal-close { background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.leave-modal-close:hover { background: #f1f5f9; }
+
+/* Detail view */
+.leave-detail { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+.leave-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #475569; }
+.leave-detail-row span:first-child { font-weight: 600; color: #64748b; }
+.leave-reason-text { background: #f8fafc; border-radius: 8px; padding: 12px; font-size: 14px; color: #334155; line-height: 1.6; margin: 4px 0; }
+.leave-doc-link { display: inline-flex; align-items: center; gap: 6px; color: #4f46e5; font-size: 13px; text-decoration: none; }
+.leave-doc-link:hover { text-decoration: underline; }
+
+/* Form */
+.leave-form { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+.leave-field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: #374151; }
+.leave-field input, .leave-field select, .leave-field textarea { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 14px; color: #0f172a; background: #fff; outline: none; transition: border-color .15s; resize: vertical; }
+.leave-field input:focus, .leave-field select:focus, .leave-field textarea:focus { border-color: #6366f1; }
+.leave-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.leave-form-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 4px; }
+.leave-error { color: #ef4444; font-size: 13px; background: #fee2e2; border-radius: 8px; padding: 8px 12px; margin: 0; }
+
+/* Review actions */
+.leave-review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0; }
+.leave-action-btn { border: 2px solid; border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 700; cursor: pointer; background: none; transition: all .15s; }
+.leave-action-btn.approve { border-color: #d1fae5; color: #059669; }
+.leave-action-btn.approve.selected, .leave-action-btn.approve:hover { background: #d1fae5; }
+.leave-action-btn.reject { border-color: #fee2e2; color: #dc2626; }
+.leave-action-btn.reject.selected, .leave-action-btn.reject:hover { background: #fee2e2; }
+
+/* Timeline */
+.leave-timeline { display: flex; flex-direction: column; gap: 0; padding: 8px 0; }
+.leave-timeline-step { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 16px; position: relative; }
+.leave-timeline-step:not(:last-child)::before { content: ''; position: absolute; left: 9px; top: 20px; bottom: 0; width: 2px; background: #e2e8f0; }
+.leave-timeline-step.done::before { background: #10b981; }
+.leave-timeline-dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cbd5e1; background: #fff; flex-shrink: 0; margin-top: 2px; }
+.leave-timeline-step.done .leave-timeline-dot { border-color: #10b981; background: #10b981; }
+.leave-timeline-step.rejected .leave-timeline-dot { border-color: #ef4444; background: #ef4444; }
+.leave-timeline-content strong { display: block; font-size: 14px; color: #1e293b; }
+.leave-timeline-content small { color: #94a3b8; font-size: 12px; }
+.leave-tl-action { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+.leave-tl-action.approve { background: #d1fae5; color: #059669; }
+.leave-tl-action.reject { background: #fee2e2; color: #dc2626; }
+.leave-tl-note { font-size: 12px; color: #64748b; font-style: italic; margin: 4px 0 0; }
+
+/* TL approval box in HR modal */
+.leave-tl-approval-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; font-size: 13px; display: flex; flex-direction: column; gap: 2px; color: #166534; }
+.leave-tl-approval-box em { color: #4b5563; font-style: italic; font-size: 12px; }
+
+/* Approval chain in Admin */
+.leave-approval-chain { display: flex; gap: 8px; flex-wrap: wrap; }
+.leave-chain-step { flex: 1; min-width: 120px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 8px 12px; font-size: 13px; display: flex; flex-direction: column; gap: 2px; color: #166534; }
+.leave-chain-step span { font-weight: 700; }
+.leave-chain-step small { color: #6b7280; }
+.leave-chain-step em { font-style: italic; font-size: 12px; color: #4b5563; }
+
+/* Empty/Loading */
+.leave-loading { text-align: center; padding: 60px; color: #94a3b8; font-size: 15px; }
+.leave-empty { text-align: center; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; color: #94a3b8; }
+.leave-empty p { font-size: 15px; margin: 0; }
+
+/* Auth page */
+.leave-auth-shell { min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.leave-auth-card { background: #fff; border-radius: 20px; padding: 40px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+.leave-auth-brand h1 { font-size: 22px; font-weight: 800; color: #0f172a; margin: 16px 0 4px; }
+.leave-auth-brand p { color: #64748b; margin: 0 0 28px; font-size: 14px; }
+.leave-google-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border: 2px solid #e2e8f0; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; background: #fff; color: #1e293b; transition: all .15s; }
+.leave-google-btn:hover:not(:disabled) { border-color: #6366f1; box-shadow: 0 0 0 3px #eef2ff; }
+.leave-google-btn:disabled { opacity: .6; cursor: not-allowed; }
+.leave-auth-error { color: #ef4444; font-size: 13px; background: #fee2e2; border-radius: 8px; padding: 8px 12px; margin: 12px 0 0; }
+.leave-auth-note { color: #94a3b8; font-size: 12px; margin: 16px 0 0; line-height: 1.5; }
+
+/* Tabs */
+.leave-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; flex-wrap: wrap; }
+.leave-tab { background: none; border: 1px solid transparent; border-radius: 8px; padding: 8px 16px; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; transition: all .15s; }
+.leave-tab:hover { background: #f1f5f9; color: #0f172a; }
+.leave-tab.active { background: #eef2ff; color: #4f46e5; border-color: #c7d2fe; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .leave-main { padding: 20px 16px; }
+  .leave-topbar { padding: 0 16px; }
+  .leave-field-row { grid-template-columns: 1fr; }
+  .leave-cards-grid { grid-template-columns: 1fr; }
+  .leave-page-header { flex-direction: column; gap: 12px; }
+}

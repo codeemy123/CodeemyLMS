@@ -72,6 +72,7 @@ export const navigation = {
     ['Students', Users],
     ['Mentors', GraduationCap],
     ['Account Approvals', ShieldCheck],
+    ['Leave Approvals', CalendarDays],
     ['Batches', Layers],
     ['Attendance', Check],
     ['Assessments', ListChecks],
