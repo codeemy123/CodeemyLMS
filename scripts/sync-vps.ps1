@@ -142,6 +142,7 @@ foreach ($dir in $dirsToUpdate) {
     }
 
     # 2. Belt-and-suspenders: add missing columns/tables via psql BEFORE migrate.
+    #    Tries postgres superuser first (owns tables), then falls back to codeemy_app.
     #    Safe every deploy (IF NOT EXISTS). Ensures columns exist even if Prisma
     #    migration tracking skipped a migration on this VPS.
     $psqlEarly = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
@@ -150,17 +151,23 @@ foreach ($dir in $dirsToUpdate) {
         if ($psqlCmd2) { $psqlEarly = $psqlCmd2.Source }
     }
     if ($psqlEarly -and (Test-Path $psqlEarly)) {
-        Write-Host "Pre-migration: ensuring live-class columns exist..."
-        & $psqlEarly -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS description text, ADD COLUMN IF NOT EXISTS thumbnail_url text, ADD COLUMN IF NOT EXISTS tags text[] NOT NULL DEFAULT ARRAY[]::text[];"
-        Write-Host "Pre-migration: ensuring leave tables exist..."
-        & $psqlEarly -h 127.0.0.1 -U codeemy_app -d codeemy_lms -f "$dir\prisma\migrations\20261125_leave_management\migration.sql"
-        Write-Host "Pre-migration setup complete (errors above are OK if already exists)."
+        $fixSql = "$dir\prisma\migrations\20261125_fix_missing_columns\migration.sql"
+        Write-Host "Pre-migration: applying idempotent column/table fix via postgres superuser..."
+        # Try postgres superuser (no password needed on Windows peer/trust auth for local)
+        $env:PGPASSWORD = ""
+        & $psqlEarly -h 127.0.0.1 -U postgres -d codeemy_lms -f $fixSql
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "postgres user failed; retrying with codeemy_app..."
+            $env:PGPASSWORD = "ThisMyApp123"
+            & $psqlEarly -h 127.0.0.1 -U codeemy_app -d codeemy_lms -f $fixSql
+        }
+        $env:PGPASSWORD = "ThisMyApp123"
+        Write-Host "Pre-migration setup complete (IF NOT EXISTS errors above are safe)."
     } else {
         Write-Host "psql not found at $psqlEarly; skipping pre-migration column fix."
     }
 
     # 3. Apply Prisma migrations. DATABASE_URL is set at process level (top of script).
-    #    DATABASE_URL is set at the process level (top of script) so cmd.exe inherits it.
     Write-Host "Checking pending Prisma migrations in $dir..."
     cmd.exe /c "npx prisma migrate status"
     Write-Host "Applying Prisma migrations in $dir..."
