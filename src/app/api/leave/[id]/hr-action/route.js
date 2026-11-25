@@ -1,11 +1,12 @@
 // POST /api/leave/[id]/hr-action — HR approve or reject
 import { leaveAuthenticated } from '@/lib/server/leave-auth';
 import { assertOrigin, ApiError, jsonBody } from '@/lib/server/api';
+import { HR_ROLES, MANAGER_ROLES } from '@/lib/leave-roles';
 export const runtime = 'nodejs';
 
 export const POST = leaveAuthenticated(async (request, { params }, actor, db) => {
   assertOrigin(request);
-  if (!['HR', 'ADMIN'].includes(actor.emp_role))
+  if (![...HR_ROLES, ...MANAGER_ROLES].includes(actor.emp_role))
     throw new ApiError(403, 'Only HR can review at this stage.');
   const { id } = await params;
   const body = await jsonBody(request);

@@ -1,20 +1,13 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { UserPlus, Users } from 'lucide-react';
-
-const ROLES = [
-  { value: 'TRAINING_INTERN', label: 'Training Intern' },
-  { value: 'INTERN', label: 'Intern' },
-  { value: 'FULLTIME', label: 'Fulltime' },
-  { value: 'TEAM_LEADER', label: 'TL' },
-  { value: 'MANAGER', label: 'Manager' },
-  { value: 'HR', label: 'HR' },
-];
-
-const LEGACY_ROLES = {
-  ADMIN: 'Admin',
-  EMPLOYEE: 'Employee',
-};
+import {
+  LEAVE_ROLES as ROLES,
+  LEGACY_LEAVE_ROLES as LEGACY_ROLES,
+  LEAVE_DEPARTMENTS as DEPARTMENTS,
+  TL_ROLES,
+  MANAGER_ROLES,
+} from '@/lib/leave-roles';
 
 export default function EmployeesManager() {
   const [employees, setEmployees] = useState([]);
@@ -34,7 +27,7 @@ export default function EmployeesManager() {
 
   useEffect(() => { load(); }, [load]);
 
-  const teamLeaders = employees.filter(e => ['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(e.emp_role) && e.status === 'ACTIVE');
+  const teamLeaders = employees.filter(e => [...TL_ROLES, ...MANAGER_ROLES].includes(e.emp_role) && e.status === 'ACTIVE');
 
   async function addEmployee(e) {
     e.preventDefault();
@@ -103,7 +96,19 @@ export default function EmployeesManager() {
                     <br />
                     <small style={{ color: '#64748b' }}>{emp.email}</small>
                   </td>
-                  <td>{emp.department || '—'}</td>
+                  <td>
+                    <select
+                      value={emp.department || ''}
+                      onChange={e => updateEmployee(emp.id, { department: e.target.value })}
+                      style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 13 }}
+                    >
+                      <option value="">No department</option>
+                      {emp.department && !DEPARTMENTS.includes(emp.department) && (
+                        <option value={emp.department}>{emp.department}</option>
+                      )}
+                      {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </td>
                   <td>
                     <select
                       value={emp.emp_role}
@@ -170,7 +175,10 @@ export default function EmployeesManager() {
                 </label>
                 <label className="leave-field">
                   <span>Department</span>
-                  <input type="text" value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} placeholder="Engineering" />
+                  <select value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))}>
+                    <option value="">Select Department…</option>
+                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
                 </label>
               </div>
               <label className="leave-field">

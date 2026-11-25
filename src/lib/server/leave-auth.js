@@ -3,6 +3,7 @@ import { firebaseAuth } from './firebase.js';
 import { ApiError } from './api.js';
 import { isConfiguredAdminEmail } from './admin-identity.js';
 import { requireActor } from './auth.js';
+import { getLeaveRoleDashboard, MANAGER_ROLES } from '@/lib/leave-roles.js';
 import { cookies } from 'next/headers';
 
 export const leaveSessionCookie = 'codeemy_leave_session';
@@ -63,7 +64,7 @@ export async function requireLeaveActor(request) {
  * Allows either a Leave-portal actor with one of `allowedRoles`, OR an LMS Admin
  * authenticated via the main LMS session cookie (for /admin/leaves).
  */
-export async function requireLeaveOrLmsAdmin(request, allowedRoles = ['MANAGER', 'ADMIN']) {
+export async function requireLeaveOrLmsAdmin(request, allowedRoles = MANAGER_ROLES) {
   try {
     const actor = await requireLeaveActor(request);
     if (allowedRoles.includes(actor.emp_role)) return actor;
@@ -109,7 +110,7 @@ export function leaveAuthenticated(handler) {
   };
 }
 
-export function leaveAdminAuthenticated(handler, allowedRoles = ['MANAGER', 'ADMIN']) {
+export function leaveAdminAuthenticated(handler, allowedRoles = MANAGER_ROLES) {
   return async (request, context) => {
     try {
       const actor = await requireLeaveOrLmsAdmin(request, allowedRoles);
@@ -123,17 +124,6 @@ export function leaveAdminAuthenticated(handler, allowedRoles = ['MANAGER', 'ADM
     }
   };
 }
-
-const roleDefaultPath = {
-  TRAINING_INTERN: '/leave/employee/dashboard',
-  INTERN: '/leave/employee/dashboard',
-  FULLTIME: '/leave/employee/dashboard',
-  EMPLOYEE: '/leave/employee/dashboard',
-  TEAM_LEADER: '/leave/tl/dashboard',
-  HR: '/leave/hr/dashboard',
-  MANAGER: '/leave/admin/dashboard',
-  ADMIN: '/leave/admin/dashboard',
-};
 
 export async function requireLeaveWorkspace(allowedRoles) {
   const store = await cookies();
@@ -168,7 +158,7 @@ export async function requireLeaveWorkspace(allowedRoles) {
   }
   if (!allowedRoles.includes(actor.emp_role)) {
     const { redirect } = await import('next/navigation');
-    redirect(roleDefaultPath[actor.emp_role] || '/leave/login');
+    redirect(getLeaveRoleDashboard(actor.emp_role) || '/leave/login');
   }
   return actor;
 }

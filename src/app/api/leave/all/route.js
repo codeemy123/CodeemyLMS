@@ -1,5 +1,6 @@
 // GET /api/leave/all — HR & Admin see all leave applications for full tracking
 import { leaveAdminAuthenticated } from '@/lib/server/leave-auth';
+import { HR_ROLES, MANAGER_ROLES } from '@/lib/leave-roles';
 export const runtime = 'nodejs';
 
 export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
@@ -32,4 +33,4 @@ export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
     },
   });
   return { leaves };
-}, ['HR', 'MANAGER', 'ADMIN']);
+}, [...HR_ROLES, ...MANAGER_ROLES]);

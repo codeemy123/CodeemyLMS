@@ -1,11 +1,12 @@
 // POST /api/leave/[id]/tl-action — TL approve or reject
 import { leaveAuthenticated } from '@/lib/server/leave-auth';
 import { assertOrigin, ApiError, jsonBody } from '@/lib/server/api';
+import { TL_ROLES, MANAGER_ROLES } from '@/lib/leave-roles';
 export const runtime = 'nodejs';
 
 export const POST = leaveAuthenticated(async (request, { params }, actor, db) => {
   assertOrigin(request);
-  if (!['TEAM_LEADER', 'MANAGER', 'ADMIN'].includes(actor.emp_role))
+  if (![...TL_ROLES, ...MANAGER_ROLES].includes(actor.emp_role))
     throw new ApiError(403, 'Only Team Leaders can review at this stage.');
   const { id } = await params;
   const body = await jsonBody(request);
@@ -15,8 +16,8 @@ export const POST = leaveAuthenticated(async (request, { params }, actor, db) =>
   const leave = await db.leave_applications.findUnique({ where: { id }, select: { id: true, status: true, employee: { select: { team_leader_id: true } } } });
   if (!leave) throw new ApiError(404, 'Leave not found.');
   if (leave.status !== 'PENDING_TL') throw new ApiError(409, 'Leave is not pending TL review.');
-  // TLs can only review their own team members (admins can review any)
-  if (actor.emp_role === 'TEAM_LEADER' && leave.employee?.team_leader_id !== actor.id)
+  // TLs can only review their own team members (managers/admins can review any)
+  if (TL_ROLES.includes(actor.emp_role) && leave.employee?.team_leader_id !== actor.id)
     throw new ApiError(403, 'This employee is not in your team.');
 
   const updated = await db.leave_applications.update({

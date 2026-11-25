@@ -1,5 +1,6 @@
 // GET /api/leave/pending/admin — Admin sees HR-approved leaves
 import { leaveAdminAuthenticated } from '@/lib/server/leave-auth';
+import { MANAGER_ROLES } from '@/lib/leave-roles';
 export const runtime = 'nodejs';
 
 export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
@@ -17,4 +18,4 @@ export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
     },
   });
   return { leaves };
-}, ['MANAGER', 'ADMIN']);
+}, MANAGER_ROLES);

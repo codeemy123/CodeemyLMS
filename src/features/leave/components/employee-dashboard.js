@@ -1,17 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { CalendarDays, FileText, Clock, CheckCircle2, XCircle, Plus, LogOut, ChevronRight, Upload } from 'lucide-react';
-
-const ROLE_LABELS = {
-  TRAINING_INTERN: 'Training Intern',
-  INTERN: 'Intern',
-  FULLTIME: 'Fulltime',
-  EMPLOYEE: 'Employee',
-  TEAM_LEADER: 'TL',
-  HR: 'HR',
-  MANAGER: 'Manager',
-  ADMIN: 'Admin',
-};
+import { LEAVE_ROLE_LABELS as ROLE_LABELS } from '@/lib/leave-roles';
 
 const STATUS_LABELS = {
   PENDING_TL: { label: 'Waiting for TL', color: '#f59e0b', bg: '#fef3c7' },

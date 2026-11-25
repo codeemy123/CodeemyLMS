@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
+import { getLeaveRoleDashboard } from '@/lib/leave-roles';
 
 let pending;
 function leaveClientAuth() {
@@ -36,17 +37,7 @@ export default function LeaveLoginPage() {
       });
       const data = await res.json();
       if (!res.ok) { setMessage(data.error || 'Login failed.'); setBusy(false); return; }
-      const roleMap = {
-        TRAINING_INTERN: '/leave/employee/dashboard',
-        INTERN: '/leave/employee/dashboard',
-        FULLTIME: '/leave/employee/dashboard',
-        EMPLOYEE: '/leave/employee/dashboard',
-        TEAM_LEADER: '/leave/tl/dashboard',
-        HR: '/leave/hr/dashboard',
-        MANAGER: '/leave/admin/dashboard',
-        ADMIN: '/leave/admin/dashboard',
-      };
-      window.location.assign(roleMap[data.role] || '/leave/employee/dashboard');
+      window.location.assign(getLeaveRoleDashboard(data.role));
     } catch (err) {
       setMessage(err.message || 'Login failed. Try again.');
       setBusy(false);

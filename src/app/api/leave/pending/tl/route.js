@@ -1,14 +1,15 @@
 // GET /api/leave/pending/tl — TL sees team's pending leaves
 import { leaveAuthenticated } from '@/lib/server/leave-auth';
 import { ApiError } from '@/lib/server/api';
+import { TL_ROLES, HR_ROLES, MANAGER_ROLES } from '@/lib/leave-roles';
 export const runtime = 'nodejs';
 
 export const GET = leaveAuthenticated(async (_req, _ctx, actor, db) => {
-  if (!['TEAM_LEADER', 'HR', 'MANAGER', 'ADMIN'].includes(actor.emp_role))
+  if (![...TL_ROLES, ...HR_ROLES, ...MANAGER_ROLES].includes(actor.emp_role))
     throw new ApiError(403, 'Only Team Leaders can view this.');
 
-  // TL sees their team members' leaves. HR/Admin see all PENDING_TL leaves.
-  const where = actor.emp_role === 'TEAM_LEADER'
+  // TL sees their team members' leaves. HR/Manager/Admin see all PENDING_TL leaves.
+  const where = TL_ROLES.includes(actor.emp_role)
     ? { status: 'PENDING_TL', employee: { team_leader_id: actor.id } }
     : { status: 'PENDING_TL' };
 

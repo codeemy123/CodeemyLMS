@@ -1,17 +1,10 @@
 import { leaveAdminAuthenticated } from '@/lib/server/leave-auth';
 import { assertOrigin, ApiError, jsonBody } from '@/lib/server/api';
+import { ALL_VALID_LEAVE_ROLES, HR_ROLES, MANAGER_ROLES } from '@/lib/leave-roles';
 export const runtime = 'nodejs';
 
-const VALID_ROLES = [
-  'TRAINING_INTERN',
-  'INTERN',
-  'FULLTIME',
-  'TEAM_LEADER',
-  'MANAGER',
-  'HR',
-  'ADMIN',
-  'EMPLOYEE',
-];
+const VALID_ROLES = ALL_VALID_LEAVE_ROLES;
+const ALLOWED_ADMIN_ROLES = [...HR_ROLES, ...MANAGER_ROLES];
 
 export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
   const employees = await db.employees.findMany({
@@ -30,7 +23,7 @@ export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
     },
   });
   return { employees };
-}, ['HR', 'MANAGER', 'ADMIN']);
+}, ALLOWED_ADMIN_ROLES);
 
 export const POST = leaveAdminAuthenticated(async (request, _ctx, _actor, db) => {
   assertOrigin(request);
@@ -74,4 +67,4 @@ export const POST = leaveAdminAuthenticated(async (request, _ctx, _actor, db) =>
     },
   });
   return { success: true, employee };
-}, ['HR', 'MANAGER', 'ADMIN']);
+}, ALLOWED_ADMIN_ROLES);

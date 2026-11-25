@@ -1,6 +1,7 @@
 // POST /api/leave/[id]/admin-action — Admin final approve or reject
 import { leaveAdminAuthenticated } from '@/lib/server/leave-auth';
 import { assertOrigin, ApiError, jsonBody } from '@/lib/server/api';
+import { MANAGER_ROLES } from '@/lib/leave-roles';
 export const runtime = 'nodejs';
 
 export const POST = leaveAdminAuthenticated(async (request, { params }, actor, db) => {
@@ -26,4 +27,4 @@ export const POST = leaveAdminAuthenticated(async (request, { params }, actor, d
     select: { id: true, status: true },
   });
   return { success: true, leave: updated };
-}, ['MANAGER', 'ADMIN']);
+}, MANAGER_ROLES);

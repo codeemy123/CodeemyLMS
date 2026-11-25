@@ -1,18 +1,11 @@
 import { leaveAdminAuthenticated } from '@/lib/server/leave-auth';
 import { assertOrigin, ApiError, jsonBody } from '@/lib/server/api';
+import { ALL_VALID_LEAVE_ROLES, HR_ROLES, MANAGER_ROLES } from '@/lib/leave-roles';
 export const runtime = 'nodejs';
 
-const VALID_ROLES = [
-  'TRAINING_INTERN',
-  'INTERN',
-  'FULLTIME',
-  'TEAM_LEADER',
-  'MANAGER',
-  'HR',
-  'ADMIN',
-  'EMPLOYEE',
-];
+const VALID_ROLES = ALL_VALID_LEAVE_ROLES;
 const VALID_STATUSES = ['ACTIVE', 'INACTIVE'];
+const ALLOWED_ADMIN_ROLES = [...HR_ROLES, ...MANAGER_ROLES];
 
 export const PATCH = leaveAdminAuthenticated(async (request, { params }, _actor, db) => {
   assertOrigin(request);
@@ -52,4 +45,4 @@ export const PATCH = leaveAdminAuthenticated(async (request, { params }, _actor,
     },
   });
   return { success: true, employee };
-}, ['HR', 'MANAGER', 'ADMIN']);
+}, ALLOWED_ADMIN_ROLES);
