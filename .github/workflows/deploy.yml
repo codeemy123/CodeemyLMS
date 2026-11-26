@@ -86,6 +86,30 @@ jobs:
 
           echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
 
+      - name: Back up, verify restore, and migrate before deployment
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          RUNTIME_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$RUNTIME_DATABASE_URL" || -z "$MIGRATION_DATABASE_URL" ]]; then
+            echo "Required production secrets DATABASE_URL and MIGRATION_DATABASE_URL are missing; deployment is blocked."
+            exit 1
+          fi
+
+          payload=$(python3 -c 'import base64,json,os; print(base64.b64encode(json.dumps({"runtimeUrl":os.environ["RUNTIME_DATABASE_URL"],"migrationUrl":os.environ["MIGRATION_DATABASE_URL"]}).encode()).decode())')
+          {
+            printf 'try {\n'
+            printf '$__dbConfig = ConvertFrom-Json ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("%s")))\n' "$payload"
+            printf '$env:DATABASE_URL = $__dbConfig.runtimeUrl\n$env:MIGRATION_DATABASE_URL = $__dbConfig.migrationUrl\n'
+            cat scripts/predeploy-db.ps1
+            printf '\n} catch { Write-Error $_; exit 1 }\n'
+          } | ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command -"
+
       - name: Deploy production release
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}

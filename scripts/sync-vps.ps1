@@ -1,15 +1,16 @@
-﻿$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
+
+function Invoke-CheckedNativeCommand {
+    param([string]$Name, [scriptblock]$Command)
+    & $Command
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Name failed with exit code $LASTEXITCODE."
+    }
+}
 
 # This is the sole official administrator identity. Keep it server-side; it is
 # deliberately never sourced from a NEXT_PUBLIC_* variable.
 $officialAdminEmail = "info.codeemy@gmail.com"
-
-# ── Set DATABASE_URL in the CURRENT process immediately so that every
-#    cmd.exe /c "npx ..." child-process inherits it.  The Machine-level
-#    SetEnvironmentVariable call below only affects NEW login sessions.
-$env:DATABASE_URL = "postgresql://codeemy_app:ThisMyApp123@127.0.0.1:5432/codeemy_lms"
-$env:PGPASSWORD   = "ThisMyApp123"
-Write-Host "Process-level DATABASE_URL set."
 
 Write-Host "============================================="
 Write-Host "=== 1. CHECK NSSM SERVICE CONFIGURATION ==="
@@ -52,9 +53,6 @@ if (Test-Path $sharedEnv) {
     if ($sharedText -notmatch "GOOGLE_APPLICATION_CREDENTIALS") {
         $sharedAppend += "GOOGLE_APPLICATION_CREDENTIALS=C:\LMS\Backend\Deployments\shared\firebase-service-account.json`n"
     }
-    if ($sharedText -match "cloudsql" -or $sharedText -notmatch "DATABASE_URL") {
-        $sharedAppend += "DATABASE_URL=postgresql://codeemy_app:ThisMyApp123@127.0.0.1:5432/codeemy_lms`n"
-    }
     if ($sharedAppend) {
         Add-Content -Path $sharedEnv -Value $sharedAppend
         Write-Host "Updated shared .env.local with configuration."
@@ -62,10 +60,15 @@ if (Test-Path $sharedEnv) {
 }
 
 # 2. Set system-wide environment variables for Windows Services
-[System.Environment]::SetEnvironmentVariable('GOOGLE_APPLICATION_CREDENTIALS', 'C:\LMS\Backend\Deployments\shared\firebase-service-account.json', 'Machine')
-[System.Environment]::SetEnvironmentVariable('LMS_ADMIN_EMAILS', $officialAdminEmail, 'Machine')
-[System.Environment]::SetEnvironmentVariable('LMS_DATABASE_MODE', 'true', 'Machine')
-[System.Environment]::SetEnvironmentVariable('DATABASE_URL', 'postgresql://codeemy_app:ThisMyApp123@127.0.0.1:5432/codeemy_lms', 'Machine')
+if (-not [System.Environment]::GetEnvironmentVariable('GOOGLE_APPLICATION_CREDENTIALS', 'Machine')) {
+    [System.Environment]::SetEnvironmentVariable('GOOGLE_APPLICATION_CREDENTIALS', 'C:\LMS\Backend\Deployments\shared\firebase-service-account.json', 'Machine')
+}
+if (-not [System.Environment]::GetEnvironmentVariable('LMS_ADMIN_EMAILS', 'Machine')) {
+    [System.Environment]::SetEnvironmentVariable('LMS_ADMIN_EMAILS', $officialAdminEmail, 'Machine')
+}
+if (-not [System.Environment]::GetEnvironmentVariable('LMS_DATABASE_MODE', 'Machine')) {
+    [System.Environment]::SetEnvironmentVariable('LMS_DATABASE_MODE', 'true', 'Machine')
+}
 
 Write-Host "============================================="
 Write-Host "=== 3. SYNC REPOSITORY CODE ==="
@@ -128,9 +131,6 @@ foreach ($dir in $dirsToUpdate) {
         if ($envText -notmatch "GOOGLE_APPLICATION_CREDENTIALS") {
             $appendContent += "GOOGLE_APPLICATION_CREDENTIALS=C:\LMS\Backend\Deployments\shared\firebase-service-account.json`n"
         }
-        if ($envText -match "cloudsql" -or $envText -notmatch "DATABASE_URL") {
-            $appendContent += "DATABASE_URL=postgresql://codeemy_app:ThisMyApp123@127.0.0.1:5432/codeemy_lms`n"
-        }
         if ($appendContent) {
             Add-Content -Path $envFile -Value $appendContent
             Write-Host "Updated $envFile with configuration variables."
@@ -141,81 +141,17 @@ foreach ($dir in $dirsToUpdate) {
         Write-Host "Warning: $envFile not found in $dir"
     }
 
-    # 2. Belt-and-suspenders: add missing columns/tables via psql BEFORE migrate.
-    #    Tries postgres superuser first (owns tables), then falls back to codeemy_app.
-    #    Safe every deploy (IF NOT EXISTS). Ensures columns exist even if Prisma
-    #    migration tracking skipped a migration on this VPS.
-    $psqlEarly = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
-    if (-not (Test-Path $psqlEarly)) {
-        $psqlCmd2 = Get-Command psql -ErrorAction SilentlyContinue
-        if ($psqlCmd2) { $psqlEarly = $psqlCmd2.Source }
-    }
-    if ($psqlEarly -and (Test-Path $psqlEarly)) {
-        $fixSql = "$dir\prisma\migrations\20261125_fix_missing_columns\migration.sql"
-        $essSql = "$dir\prisma\migrations\20261125_ess_permission_attendance\migration.sql"
-        Write-Host "Pre-migration: applying idempotent column/table fix via postgres superuser..."
-        # Try postgres superuser (no password needed on Windows peer/trust auth for local)
-        $env:PGPASSWORD = ""
-        & $psqlEarly -h 127.0.0.1 -U postgres -d codeemy_lms -f $fixSql
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "postgres user failed; retrying with codeemy_app..."
-            $env:PGPASSWORD = "ThisMyApp123"
-            & $psqlEarly -h 127.0.0.1 -U codeemy_app -d codeemy_lms -f $fixSql
-        }
-        if (Test-Path $essSql) {
-            $env:PGPASSWORD = ""
-            & $psqlEarly -h 127.0.0.1 -U postgres -d codeemy_lms -f $essSql
-            if ($LASTEXITCODE -ne 0) {
-                $env:PGPASSWORD = "ThisMyApp123"
-                & $psqlEarly -h 127.0.0.1 -U codeemy_app -d codeemy_lms -f $essSql
-            }
-        }
-        $env:PGPASSWORD = "ThisMyApp123"
-        Write-Host "Pre-migration setup complete (IF NOT EXISTS errors above are safe)."
-    } else {
-        Write-Host "psql not found at $psqlEarly; skipping pre-migration column fix."
-    }
-
-    # 3. Apply Prisma migrations. DATABASE_URL is set at process level (top of script).
-    Write-Host "Checking pending Prisma migrations in $dir..."
-    cmd.exe /c "npx prisma migrate status"
-    Write-Host "Applying Prisma migrations in $dir..."
-    cmd.exe /c "npx prisma migrate deploy"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "WARNING: Prisma migrate deploy returned non-zero; will try to continue."
-    }
-
-    # 4. Run Prisma generate and Next.js build
+    # Database backup and migrations run in the pre-deployment workflow step.
+    # This post-deployment script never changes schema or database credentials.
     Write-Host "Generating Prisma client in $dir..."
-    cmd.exe /c "npx prisma generate"
+    Invoke-CheckedNativeCommand "Prisma generate" { cmd.exe /d /s /c "npx prisma generate" }
     
     Write-Host "Building Next.js application in $dir..."
-    cmd.exe /c "npm run build"
+    Invoke-CheckedNativeCommand "Next.js build" { cmd.exe /d /s /c "npm run build" }
 }
 
 Write-Host "============================================="
-Write-Host "=== 4. READ-ONLY DATABASE ADMIN VERIFICATION ==="
-Write-Host "============================================="
-$env:PGPASSWORD = "ThisMyApp123"
-$psqlPath = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
-if (-not (Test-Path $psqlPath)) {
-    $psqlCmd = Get-Command psql -ErrorAction SilentlyContinue
-    if ($psqlCmd) { $psqlPath = $psqlCmd.Source }
-}
-
-if ($psqlPath -and (Test-Path $psqlPath)) {
-    Write-Host "Found psql at $psqlPath"
-    Write-Host "Verifying live class columns exist (read-only check)..."
-    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'class_sessions' AND column_name IN ('start_time', 'end_time', 'description', 'thumbnail_url', 'tags') ORDER BY column_name;"
-    Write-Host "Checking official administrator role without modifying the database..."
-    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT email, role, status, CASE WHEN firebase_uid IS NULL OR firebase_uid = '' THEN 'MISSING' ELSE 'PRESENT' END AS firebase_uid_mapping FROM users WHERE lower(email) = lower('$officialAdminEmail');"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Could not verify the official administrator record. No database changes were made."
-    }
-}
-
-Write-Host "============================================="
-Write-Host "=== 5. TESTING NODE RUNTIME PRISMA & FIREBASE ==="
+Write-Host "=== 4. TESTING NODE RUNTIME PRISMA & FIREBASE ==="
 Write-Host "============================================="
 if ($appDir -and (Test-Path $appDir)) { Set-Location $appDir } else { Set-Location $targetDir }
 $runtimeTest = @'
@@ -242,19 +178,22 @@ async function test() {
 test().catch(err => { console.error('Test error:', err); process.exitCode = 1; });
 '@
 Set-Content -Path "test-runtime.mjs" -Value $runtimeTest
-node test-runtime.mjs
-Remove-Item -Force "test-runtime.mjs"
+try {
+    Invoke-CheckedNativeCommand "Runtime smoke test" { node test-runtime.mjs }
+} finally {
+    Remove-Item -Force "test-runtime.mjs" -ErrorAction SilentlyContinue
+}
 
 Write-Host "============================================="
-Write-Host "=== 6. RESTARTING NSSM LMSBACKEND SERVICE ==="
+Write-Host "=== 5. RESTARTING NSSM LMSBACKEND SERVICE ==="
 Write-Host "============================================="
-nssm restart LMSBackend
+Invoke-CheckedNativeCommand "LMSBackend restart" { nssm restart LMSBackend }
 Start-Sleep -Seconds 6
 $status = nssm status LMSBackend
 Write-Host "LMSBackend status: $status"
 
 Write-Host "============================================="
-Write-Host "=== 7. VERIFYING LOCAL SERVICE ENDPOINTS ==="
+Write-Host "=== 6. VERIFYING LOCAL SERVICE ENDPOINTS ==="
 Write-Host "============================================="
 Write-Host "--- Testing /api/auth/config ---"
 curl.exe -s http://127.0.0.1:3000/api/auth/config
