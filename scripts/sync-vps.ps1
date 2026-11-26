@@ -205,8 +205,8 @@ if (-not (Test-Path $psqlPath)) {
 
 if ($psqlPath -and (Test-Path $psqlPath)) {
     Write-Host "Found psql at $psqlPath"
-    Write-Host "Ensuring live class columns exist (idempotent)..."
-    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS description text, ADD COLUMN IF NOT EXISTS thumbnail_url text, ADD COLUMN IF NOT EXISTS tags text[] NOT NULL DEFAULT ARRAY[]::text[];"
+    Write-Host "Verifying live class columns exist (read-only check)..."
+    & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'class_sessions' AND column_name IN ('start_time', 'end_time', 'description', 'thumbnail_url', 'tags') ORDER BY column_name;"
     Write-Host "Checking official administrator role without modifying the database..."
     & $psqlPath -h 127.0.0.1 -U codeemy_app -d codeemy_lms -c "SELECT email, role, status, CASE WHEN firebase_uid IS NULL OR firebase_uid = '' THEN 'MISSING' ELSE 'PRESENT' END AS firebase_uid_mapping FROM users WHERE lower(email) = lower('$officialAdminEmail');"
     if ($LASTEXITCODE -ne 0) {

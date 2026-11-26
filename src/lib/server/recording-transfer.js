@@ -73,7 +73,7 @@ export async function transferNextRecording(db) {
     },
   });
   const rows =
-    await db.$queryRaw`UPDATE zoom_recordings SET status='PROCESSING', attempts=attempts+1, lease_until=now()+interval '10 minutes', updated_at=now() WHERE id=(SELECT id FROM zoom_recordings WHERE (status='QUEUED' OR (status='PROCESSING' AND lease_until < now())) AND attempts < 5 ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING id`;
+    await db.$queryRaw`UPDATE zoom_recordings SET status='PROCESSING', attempts=attempts+1, lease_expires_at=now()+interval '10 minutes', updated_at=now() WHERE id=(SELECT id FROM zoom_recordings WHERE (status='QUEUED' OR (status='PROCESSING' AND lease_expires_at < now())) AND attempts < 5 ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING id`;
   if (!rows.length) return false;
   const id = rows[0].id;
   const job = await db.zoom_recordings.findUnique({
