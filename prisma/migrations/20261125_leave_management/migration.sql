@@ -22,8 +22,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS "employees_email_key" ON "employees"("email");
 CREATE INDEX IF NOT EXISTS "idx_employees_role" ON "employees"("emp_role");
 CREATE INDEX IF NOT EXISTS "idx_employees_tl" ON "employees"("team_leader_id");
 
-ALTER TABLE "employees" ADD CONSTRAINT "employees_team_leader_id_fkey"
-  FOREIGN KEY ("team_leader_id") REFERENCES "employees"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.employees'::regclass
+      AND conname = 'employees_team_leader_id_fkey'
+  ) THEN
+    ALTER TABLE public.employees ADD CONSTRAINT employees_team_leader_id_fkey
+      FOREIGN KEY (team_leader_id) REFERENCES public.employees(id) ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "leave_applications" (
   "id" UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -57,11 +65,37 @@ CREATE INDEX IF NOT EXISTS "idx_leave_status" ON "leave_applications"("status");
 CREATE INDEX IF NOT EXISTS "idx_leave_tl" ON "leave_applications"("tl_reviewed_by");
 CREATE INDEX IF NOT EXISTS "idx_leave_hr" ON "leave_applications"("hr_reviewed_by");
 
-ALTER TABLE "leave_applications" ADD CONSTRAINT "leave_applications_employee_id_fkey"
-  FOREIGN KEY ("employee_id") REFERENCES "employees"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "leave_applications" ADD CONSTRAINT "leave_applications_tl_reviewed_by_fkey"
-  FOREIGN KEY ("tl_reviewed_by") REFERENCES "employees"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "leave_applications" ADD CONSTRAINT "leave_applications_hr_reviewed_by_fkey"
-  FOREIGN KEY ("hr_reviewed_by") REFERENCES "employees"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "leave_applications" ADD CONSTRAINT "leave_applications_admin_reviewed_by_fkey"
-  FOREIGN KEY ("admin_reviewed_by") REFERENCES "employees"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.leave_applications'::regclass
+      AND conname = 'leave_applications_employee_id_fkey'
+  ) THEN
+    ALTER TABLE public.leave_applications ADD CONSTRAINT leave_applications_employee_id_fkey
+      FOREIGN KEY (employee_id) REFERENCES public.employees(id) ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.leave_applications'::regclass
+      AND conname = 'leave_applications_tl_reviewed_by_fkey'
+  ) THEN
+    ALTER TABLE public.leave_applications ADD CONSTRAINT leave_applications_tl_reviewed_by_fkey
+      FOREIGN KEY (tl_reviewed_by) REFERENCES public.employees(id) ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.leave_applications'::regclass
+      AND conname = 'leave_applications_hr_reviewed_by_fkey'
+  ) THEN
+    ALTER TABLE public.leave_applications ADD CONSTRAINT leave_applications_hr_reviewed_by_fkey
+      FOREIGN KEY (hr_reviewed_by) REFERENCES public.employees(id) ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.leave_applications'::regclass
+      AND conname = 'leave_applications_admin_reviewed_by_fkey'
+  ) THEN
+    ALTER TABLE public.leave_applications ADD CONSTRAINT leave_applications_admin_reviewed_by_fkey
+      FOREIGN KEY (admin_reviewed_by) REFERENCES public.employees(id) ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;

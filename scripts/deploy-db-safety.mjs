@@ -8,7 +8,15 @@ import pg from 'pg';
 config({ path: ['.env.local', '.env'], quiet: true });
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const backupDirectory = 'C:\\LMS\\Backend\\Backups\\Database';
+const backupDirectoryOption = process.argv.indexOf('--backup-directory');
+const backupDirectoryArgument =
+  backupDirectoryOption >= 0 ? process.argv[backupDirectoryOption + 1] : undefined;
+if (backupDirectoryOption >= 0 && (!backupDirectoryArgument || backupDirectoryArgument.startsWith('--'))) {
+  throw new Error('--backup-directory requires a path.');
+}
+const backupDirectory = backupDirectoryArgument
+  ? path.resolve(backupDirectoryArgument)
+  : 'C:\\LMS\\Backend\\Backups\\Database';
 const preservedTables = [
   'employees',
   'leave_applications',
@@ -339,8 +347,11 @@ async function verifyMappedSchema(client, label) {
       [table],
     );
     const present = new Set(result.rows.map((row) => row.column_name));
-    if (columns.some((column) => !present.has(column))) {
-      throw new Error(`${label} is missing required columns on public.${table}.`);
+    const missing = columns.filter((column) => !present.has(column));
+    if (missing.length) {
+      throw new Error(
+        `${label} is missing required columns on public.${table}: ${missing.join(', ')}.`,
+      );
     }
   }
 }

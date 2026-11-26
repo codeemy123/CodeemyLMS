@@ -23,9 +23,11 @@ The production workflow requires the `DATABASE_URL` and `MIGRATION_DATABASE_URL`
 
 Before activating a release, the workflow validates both roles and the registered baseline/history, writes a fresh custom-format backup under `C:\LMS\Backend\Backups\Database`, verifies the archive, restores it to a temporary database, and tests pending migrations on that restored copy. Only after those checks pass does it migrate and verify the production database, then activate the release. A missing secret, failed backup/restore, insufficient permission, or migration error stops deployment. The runtime `DATABASE_URL` machine variable is updated from the protected secret only after successful database checks; other environment variables are not changed by this gate.
 
+An isolated local preflight test may pass `--backup-directory <temporary-path>` so its backup never uses or overwrites the production backup directory.
+
 The backup/restore and migration checks have not been confirmed against the production VPS until a deployment run completes successfully. A local `28P01` authentication failure must be corrected by configuring a valid role/password on the intended PostgreSQL instance and supplying the matching, correctly URL-encoded connection URL; do not work around it by running migrations as `codeemy_app`.
 
-The Zoom recording compatibility migration renames legacy metadata columns to the names expected by Prisma. It preserves their values and stops if both old and new columns exist, rather than choosing which copy to keep.
+The live-class and Zoom recording compatibility migrations rename legacy columns to the names expected by Prisma. They preserve existing values and stop if both old and new columns exist, rather than choosing which copy to keep.
 
 ## Implemented API foundation
 
