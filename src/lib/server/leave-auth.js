@@ -144,15 +144,18 @@ export async function requireLeaveWorkspace(allowedRoles) {
   const db = getPrisma();
   let actor = await db.employees.findUnique({
     where: { firebase_uid: decoded.uid },
-    select: { id: true, full_name: true, email: true, emp_role: true, status: true, team_leader_id: true, profile_image: true },
+    select: { id: true, firebase_uid: true, full_name: true, email: true, emp_role: true, status: true, team_leader_id: true, profile_image: true },
   });
   if (!actor && decoded.email) {
     actor = await db.employees.findFirst({
       where: { email: { equals: decoded.email.trim().toLowerCase(), mode: 'insensitive' } },
-      select: { id: true, full_name: true, email: true, emp_role: true, status: true, team_leader_id: true, profile_image: true },
+      select: { id: true, firebase_uid: true, full_name: true, email: true, emp_role: true, status: true, team_leader_id: true, profile_image: true },
     });
+    if (actor && actor.firebase_uid !== decoded.uid) {
+      await db.employees.update({ where: { id: actor.id }, data: { firebase_uid: decoded.uid } }).catch(() => {});
+    }
   }
-  if (!actor) {
+  if (!actor || actor.status !== 'ACTIVE') {
     const { redirect } = await import('next/navigation');
     redirect('/leave/login');
   }

@@ -2,6 +2,8 @@ import { resolveSessionAccount } from '@/lib/server/session-account';
 import { NextResponse } from 'next/server';
 import { firebaseAuth } from '@/lib/server/firebase';
 import { sessionCookie } from '@/lib/server/auth';
+import { leaveSessionCookie } from '@/lib/server/leave-auth';
+import { getLeaveRoleDashboard } from '@/lib/leave-roles';
 import { assertOrigin, ApiError, jsonBody, errorResponse } from '@/lib/server/api';
 import { getPrisma } from '@/lib/prisma';
 export const runtime = 'nodejs';
@@ -40,9 +42,51 @@ export async function POST(request) {
     if (Date.now() / 1000 - token.auth_time > 600)
       throw new ApiError(401, 'Sign in again to create a session.');
     const db = getPrisma();
-    const account = await resolveSessionAccount(db, token);
+
+    async function tryEmployeePortalLogin() {
+      if (typeof db.employees?.findFirst !== 'function') return null;
+      let emp = await db.employees.findUnique({
+        where: { firebase_uid: token.uid },
+        select: { id: true, emp_role: true, status: true },
+      });
+      if (!emp && token.email) {
+        emp = await db.employees.findFirst({
+          where: { email: { equals: token.email.trim().toLowerCase(), mode: 'insensitive' } },
+          select: { id: true, emp_role: true, status: true },
+        });
+        if (emp) {
+          await db.employees.update({ where: { id: emp.id }, data: { firebase_uid: token.uid } }).catch(() => {});
+        }
+      }
+      if (!emp) return null;
+      if (emp.status !== 'ACTIVE') throw new ApiError(403, 'Your employee account is not active.');
+      let leaveVal;
+      try {
+        leaveVal = await auth.createSessionCookie(body.idToken, { expiresIn: 5 * 24 * 60 * 60 * 1000 });
+      } catch {
+        leaveVal = body.idToken;
+      }
+      const res = NextResponse.json({
+        role: emp.emp_role,
+        redirectTo: getLeaveRoleDashboard(emp.emp_role),
+      });
+      res.cookies.set(leaveSessionCookie, leaveVal, sessionCookieOptions(request, 5 * 24 * 60 * 60));
+      res.headers.set('Cache-Control', 'no-store');
+      return res;
+    }
+
+    let account;
+    try {
+      account = await resolveSessionAccount(db, token);
+    } catch (resolveErr) {
+      const empRes = await tryEmployeePortalLogin();
+      if (empRes) return empRes;
+      throw resolveErr;
+    }
     console.log('[AUTH/SESSION] Account resolved:', account?.role, 'needsReg:', account?.needsRegistration);
     if (account.needsRegistration) {
+      const empRes = await tryEmployeePortalLogin();
+      if (empRes) return empRes;
       const response = NextResponse.json(account, { headers: { 'Cache-Control': 'no-store' } });
       response.cookies.set(sessionCookie, '', sessionCookieOptions(request, 0));
       return response;

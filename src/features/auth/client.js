@@ -41,6 +41,8 @@ export async function login(email, password, google = false) {
   try {
     const credential = await signInWithEmailAndPassword(auth, email, password);
     const data = await createServerSession(credential.user);
+    if (typeof data.redirectTo === 'string' && data.redirectTo.startsWith('/'))
+      return data.redirectTo;
     if (!['ADMIN', 'MENTOR', 'STUDENT'].includes(data.role))
       throw new Error('Account role is invalid.');
     return '/' + data.role.toLowerCase() + '/dashboard';
@@ -60,6 +62,8 @@ export async function googleAccess() {
       completingRegistration = true;
       return { needsRegistration: true, profile: data.profile };
     }
+    if (typeof data.redirectTo === 'string' && data.redirectTo.startsWith('/'))
+      return data.redirectTo;
     if (!['ADMIN', 'MENTOR', 'STUDENT'].includes(data.role))
       throw new Error('Account role is invalid.');
     return '/' + data.role.toLowerCase() + '/dashboard';

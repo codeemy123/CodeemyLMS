@@ -119,6 +119,7 @@ export default function EmployeesManager() {
                         <option value={emp.emp_role}>{LEGACY_ROLES[emp.emp_role]}</option>
                       )}
                       {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                      {!LEGACY_ROLES[emp.emp_role] && <option value="ADMIN">Admin (Full Access)</option>}
                     </select>
                   </td>
                   <td>
@@ -171,6 +172,7 @@ export default function EmployeesManager() {
                   <span>Role</span>
                   <select value={form.empRole} onChange={e => setForm(f => ({ ...f, empRole: e.target.value }))}>
                     {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    <option value="ADMIN">Admin (Full Access)</option>
                   </select>
                 </label>
                 <label className="leave-field">
