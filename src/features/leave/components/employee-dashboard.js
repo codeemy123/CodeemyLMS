@@ -492,8 +492,41 @@ function EmployeeMuster({ actorId }) {
   );
 }
 
+/* ─── Leave Balance Card ─── */
+const BALANCE_COLORS = { CASUAL: '#6366f1', SICK: '#10b981', EMERGENCY: '#f59e0b', OTHER: '#8b5cf6' };
+function LeaveBalanceCard({ balance }) {
+  if (!balance) return null;
+  const types = ['CASUAL', 'SICK', 'EMERGENCY', 'OTHER'];
+  return (
+    <div className="ess-balance-card">
+      <div className="ess-balance-header">
+        <span>🗓 Annual Leave Balance ({balance.year})</span>
+        <span className="ess-balance-total">
+          Total Remaining: <strong>{balance.remaining.total}</strong> / {balance.allowance.total} days
+        </span>
+      </div>
+      <div className="ess-balance-grid">
+        {types.map(t => (
+          <div key={t} className="ess-balance-item" style={{ borderTop: `3px solid ${BALANCE_COLORS[t]}` }}>
+            <div className="ess-balance-type">{t.charAt(0) + t.slice(1).toLowerCase()} Leave</div>
+            <div className="ess-balance-nums">
+              <span className="ess-balance-remaining" style={{ color: BALANCE_COLORS[t] }}>{balance.remaining[t]}</span>
+              <span className="ess-balance-sep">/</span>
+              <span className="ess-balance-allow">{balance.allowance[t]}</span>
+            </div>
+            <div className="ess-balance-used">Used: {balance.used[t]} day{balance.used[t] !== 1 ? 's' : ''}</div>
+            <div className="ess-balance-bar">
+              <div className="ess-balance-bar-fill" style={{ width: `${Math.min(100, (balance.used[t] / balance.allowance[t]) * 100)}%`, background: BALANCE_COLORS[t] }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Dashboard Stats + Pie Chart ─── */
-function DashboardHome({ actor, leaves, permRecords, attRecords, loading }) {
+function DashboardHome({ actor, leaves, balance, permRecords, attRecords, loading }) {
   const [pieMode, setPieMode] = useState('monthly'); // monthly | today
 
   const now = new Date();
@@ -532,6 +565,7 @@ function DashboardHome({ actor, leaves, permRecords, attRecords, loading }) {
       <h2 className="ess-section-title">Dashboard</h2>
       {loading ? <div className="ess-loading">Loading…</div> : (
         <>
+          <LeaveBalanceCard balance={balance} />
           <div className="ess-stat-grid">
             {[
               { label: 'Leave Days (Approved)', value: leaveDays, color: '#6366f1' },
@@ -651,6 +685,7 @@ export default function EmployeeDashboard({ actor }) {
   const [modal, setModal] = useState(null); // 'apply-leave' | 'apply-perm' | 'apply-att'
 
   const [leaves, setLeaves] = useState([]);
+  const [balance, setBalance] = useState(null);
   const [permRecords, setPermRecords] = useState([]);
   const [attRecords, setAttRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -664,6 +699,7 @@ export default function EmployeeDashboard({ actor }) {
         fetch('/api/leave/attendance/my', { cache: 'no-store' }).then(r => r.ok ? r.json() : { records: [] }),
       ]);
       setLeaves(lr.leaves || []);
+      setBalance(lr.balance || null);
       setPermRecords(pr.records || []);
       setAttRecords(ar.records || []);
     } finally { setLoading(false); }
@@ -729,7 +765,7 @@ export default function EmployeeDashboard({ actor }) {
           </div>
 
           {activePage === 'dashboard' && (
-            <DashboardHome actor={actor} leaves={leaves} permRecords={permRecords} attRecords={attRecords} loading={loading} />
+            <DashboardHome actor={actor} leaves={leaves} balance={balance} permRecords={permRecords} attRecords={attRecords} loading={loading} />
           )}
 
           {activePage === 'status-leave' && (

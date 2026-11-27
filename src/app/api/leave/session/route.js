@@ -34,10 +34,13 @@ export async function POST(request) {
     const db = getPrisma();
     let actor = await db.employees.findUnique({ where: { firebase_uid: token.uid }, select: { id: true, emp_role: true, status: true } });
     if (!actor && token.email) {
+      if (token.email_verified !== true) {
+        throw new ApiError(403, 'Verify your email address before signing in.');
+      }
       actor = await db.employees.findFirst({ where: { email: { equals: token.email.trim().toLowerCase(), mode: 'insensitive' } }, select: { id: true, emp_role: true, status: true } });
       if (actor) await db.employees.update({ where: { id: actor.id }, data: { firebase_uid: token.uid } }).catch(() => {});
     }
-    if (!actor && isConfiguredAdminEmail(token.email)) {
+    if (!actor && token.email_verified === true && isConfiguredAdminEmail(token.email)) {
       actor = await db.employees.create({
         data: {
           firebase_uid: token.uid,

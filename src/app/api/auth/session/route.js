@@ -50,6 +50,9 @@ export async function POST(request) {
         select: { id: true, emp_role: true, status: true },
       });
       if (!emp && token.email) {
+        if (token.email_verified !== true) {
+          throw new ApiError(403, 'Verify your email address before signing in.');
+        }
         emp = await db.employees.findFirst({
           where: { email: { equals: token.email.trim().toLowerCase(), mode: 'insensitive' } },
           select: { id: true, emp_role: true, status: true },

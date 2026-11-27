@@ -50,6 +50,8 @@ export const HR_ROLES = [
   ...LEAVE_ROLES.filter((r) => r.tier === 'HR').map((r) => r.value),
 ];
 
+export const ADMIN_ONLY_ROLES = ['ADMIN'];
+
 export const MANAGER_ROLES = [
   'MANAGER',
   'ADMIN',

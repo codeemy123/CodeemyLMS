@@ -1,6 +1,6 @@
 import { leaveAdminAuthenticated } from '@/lib/server/leave-auth';
 import { assertOrigin, ApiError, jsonBody } from '@/lib/server/api';
-import { ALL_VALID_LEAVE_ROLES, HR_ROLES, MANAGER_ROLES } from '@/lib/leave-roles';
+import { ALL_VALID_LEAVE_ROLES, ADMIN_ONLY_ROLES, HR_ROLES, MANAGER_ROLES } from '@/lib/leave-roles';
 export const runtime = 'nodejs';
 
 const VALID_ROLES = ALL_VALID_LEAVE_ROLES;
@@ -25,7 +25,7 @@ export const GET = leaveAdminAuthenticated(async (_req, _ctx, _actor, db) => {
   return { employees };
 }, ALLOWED_ADMIN_ROLES);
 
-export const POST = leaveAdminAuthenticated(async (request, _ctx, _actor, db) => {
+export const POST = leaveAdminAuthenticated(async (request, _ctx, actor, db) => {
   assertOrigin(request);
   const body = await jsonBody(request);
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
@@ -38,6 +38,10 @@ export const POST = leaveAdminAuthenticated(async (request, _ctx, _actor, db) =>
   if (!email || !email.includes('@')) throw new ApiError(400, 'Valid email is required.');
   if (!fullName) throw new ApiError(400, 'Full name is required.');
   if (!VALID_ROLES.includes(empRole)) throw new ApiError(400, 'Invalid employee role.');
+  if (ADMIN_ONLY_ROLES.includes(empRole) && !ADMIN_ONLY_ROLES.includes(actor.emp_role))
+    throw new ApiError(403, 'Only Admin can create Admin accounts.');
+  if (MANAGER_ROLES.includes(empRole) && !MANAGER_ROLES.includes(actor.emp_role))
+    throw new ApiError(403, 'Only Management or Admin can create Manager accounts.');
 
   const existing = await db.employees.findFirst({
     where: { email: { equals: email, mode: 'insensitive' } },

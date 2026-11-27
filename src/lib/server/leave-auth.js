@@ -35,7 +35,7 @@ export async function requireLeaveActor(request) {
     where: { firebase_uid: decoded.uid },
     select: { id: true, full_name: true, email: true, emp_role: true, status: true, team_leader_id: true },
   });
-  if (!actor && decoded.email) {
+  if (!actor && decoded.email && decoded.email_verified === true) {
     actor = await db.employees.findFirst({
       where: { email: { equals: decoded.email.trim().toLowerCase(), mode: 'insensitive' } },
       select: { id: true, full_name: true, email: true, emp_role: true, status: true, team_leader_id: true },
@@ -44,7 +44,7 @@ export async function requireLeaveActor(request) {
       await db.employees.update({ where: { id: actor.id }, data: { firebase_uid: decoded.uid } }).catch(() => {});
     }
   }
-  if (!actor && isConfiguredAdminEmail(decoded.email)) {
+  if (!actor && decoded.email_verified === true && isConfiguredAdminEmail(decoded.email)) {
     actor = await db.employees.create({
       data: {
         firebase_uid: decoded.uid,
@@ -146,7 +146,7 @@ export async function requireLeaveWorkspace(allowedRoles) {
     where: { firebase_uid: decoded.uid },
     select: { id: true, firebase_uid: true, full_name: true, email: true, emp_role: true, status: true, team_leader_id: true, profile_image: true },
   });
-  if (!actor && decoded.email) {
+  if (!actor && decoded.email && decoded.email_verified === true) {
     actor = await db.employees.findFirst({
       where: { email: { equals: decoded.email.trim().toLowerCase(), mode: 'insensitive' } },
       select: { id: true, firebase_uid: true, full_name: true, email: true, emp_role: true, status: true, team_leader_id: true, profile_image: true },

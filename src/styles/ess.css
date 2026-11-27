@@ -159,3 +159,20 @@
   .ess-stat-grid { grid-template-columns: repeat(2, 1fr); }
   .ess-dashboard-row { flex-direction: column; }
 }
+
+/* ─── Leave Balance Card ─── */
+.ess-balance-card { background: #fff; border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.ess-balance-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 14px; font-weight: 600; color: #374151; flex-wrap: wrap; gap: 6px; }
+.ess-balance-total { font-size: 13px; color: #64748b; font-weight: 400; }
+.ess-balance-total strong { color: #10b981; font-weight: 700; }
+.ess-balance-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 768px) { .ess-balance-grid { grid-template-columns: repeat(2, 1fr); } }
+.ess-balance-item { background: #f8fafc; border-radius: 8px; padding: 12px 14px; border-top-width: 3px; border-top-style: solid; }
+.ess-balance-type { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.ess-balance-nums { display: flex; align-items: baseline; gap: 3px; margin-bottom: 2px; }
+.ess-balance-remaining { font-size: 26px; font-weight: 700; line-height: 1; }
+.ess-balance-sep { font-size: 14px; color: #94a3b8; }
+.ess-balance-allow { font-size: 13px; color: #94a3b8; }
+.ess-balance-used { font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
+.ess-balance-bar { height: 4px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+.ess-balance-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
